@@ -5,6 +5,7 @@
 - Owner: **UltronService**（private）
 - Phase 1: `core/` loads `brands/<brandId>/brand.json` and renders `portrait-menu` / `landscape-queue`
 - Runtime state key: `qms_state_v1`（spirit of `guiji_qms_state_v1`）
+- Android Kiosk WebView skeleton: `shell/android/` (merged from PR #1)
 
 ## Run (Web / static smoke)
 
