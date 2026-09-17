@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>QMS</title>
+    <link rel="stylesheet" href="core/styles.css" />
+    <script>
+      /* Demo entry: load brands/guiji. Production static pack keeps debug off. */
+      window.__QMS_BRAND_ID__ = 'guiji';
+      window.__QMS_PRODUCTION__ = true;
+    </script>
+  </head>
+  <body>
+    <div id="qms-root"></div>
+    <script src="core/brand-loader.js"></script>
+    <script src="core/state.js"></script>
+    <script src="core/scanner.js"></script>
+    <script src="core/audio.js"></script>
+    <script src="core/settings.js"></script>
+    <script src="core/ui.js"></script>
+    <script src="core/app.js"></script>
+  </body>
+</html>

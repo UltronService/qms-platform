@@ -1,0 +1,9 @@
+{
+  "name": "qms-platform",
+  "private": true,
+  "description": "QMS platform framework (core + brand packs)",
+  "scripts": {
+    "test": "node --test core/tests/qms-core.test.js",
+    "start": "python3 -m http.server 4173"
+  }
+}
