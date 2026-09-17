@@ -74,7 +74,7 @@ body {
 }
 
 .layout-landscape-queue .qms-ad {
-  width: 58%;
+  width: 44%;
   height: 100%;
   position: relative;
   background: var(--qms-primary);
@@ -82,7 +82,7 @@ body {
 }
 
 .layout-landscape-queue .qms-queue-wall {
-  width: 42%;
+  width: 56%;
   height: 100%;
 }
 
@@ -195,6 +195,10 @@ body {
   font-weight: 700;
   letter-spacing: 8px;
   color: #fff;
+}
+
+.layout-landscape-queue .qms-main-number {
+  font-size: 240px;
 }
 
 .layout-landscape-queue .qms-pickup-hint {
