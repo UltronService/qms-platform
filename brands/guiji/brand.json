@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "brandId": "guiji",
+  "displayName": "龜記",
+  "layout": "portrait-menu",
+  "theme": {
+    "primary": "#006B3F",
+    "accent": "#DBEE0F",
+    "bannerOpacity": 0.85,
+    "bannerOpacityMin": 0.75
+  },
+  "copy": {
+    "pickupHint": "請取餐",
+    "standbyFallback": "logo-on-primary"
+  },
+  "queue": {
+    "historyMax": 3,
+    "historyOrientation": "horizontal",
+    "mainNumberMaxLenForLargeFont": 4
+  },
+  "audio": {
+    "tts": true,
+    "dingDong": true,
+    "mutedDefault": false
+  },
+  "assets": {
+    "logo": "assets/logo.svg",
+    "menuImage": "assets/menu.jpg",
+    "standbyVideo": "assets/standby.webm"
+  },
+  "storeId": null,
+  "deviceId": null
+}
