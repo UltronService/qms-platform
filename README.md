@@ -11,5 +11,5 @@
 
 ## Next
 Frontend: core modules + brand loader  
-Android: `shell/` APK skeleton  
+Android: `shell/android/` Kiosk WebView skeleton  
 QA: Phase 1 acceptance A–E

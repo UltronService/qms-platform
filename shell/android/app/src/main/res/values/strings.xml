@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">QMS Kiosk</string>
+    <string name="pack_missing_title">Brand pack not found</string>
+    <string name="pack_missing_body">brandId=%1$s\n\nTried:\n%2$s\n\nCopy the brand static pack to assets/www/, assets/brands/%1$s/, or /sdcard/qms/%1$s/ then relaunch.</string>
+</resources>

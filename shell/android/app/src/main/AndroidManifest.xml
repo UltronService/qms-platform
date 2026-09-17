@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Local file:// packs do not need network. Keep INTERNET so WebView media/file quirks
+         on some devices do not silently fail. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- TODO(kiosk): Android 11+ SD-card override /sdcard/qms/<brand>/ needs
+         MANAGE_EXTERNAL_STORAGE (special app-access settings) or a SAF tree.
+         Do not enable until a product owner signs off on all-files access. -->
+    <!-- <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" /> -->
+
+    <!-- TODO(kiosk): Device-owner / lock-task / launcher replacement for a true kiosk:
+         - BIND_DEVICE_ADMIN + lockTaskMode="if_whitelisted"
+         - CATEGORY_HOME + CATEGORY_DEFAULT on the activity (replaces launcher)
+         - Disable status/nav/recents via DevicePolicyManager
+         - START_ACTIVITIES_FROM_BACKGROUND if BOOT_COMPLETED cannot open UI -->
+    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
+
+    <application
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.QmsKiosk">
+
+        <activity
+            android:name=".KioskActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="true"
+            android:keepScreenOn="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="unspecified"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustNothing">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <!-- TODO(kiosk): uncomment to replace Home after device-owner provisioning
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                -->
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
