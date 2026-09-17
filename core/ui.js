@@ -179,7 +179,7 @@
       host.style.setProperty('--qms-accent', theme.accent);
       host.style.setProperty('--qms-banner-opacity', String(theme.bannerOpacity));
       if (doc.body) {
-        doc.body.style.background = theme.primary;
+        doc.body.style.background = '#00321f';
       }
       if (doc.title !== undefined) {
         doc.title = brand.displayName + ' 叫號';
@@ -224,7 +224,7 @@
         return;
       }
       const scale = Math.min(root.innerWidth / canvasWidth, root.innerHeight / canvasHeight);
-      canvas.style.transform = 'scale(' + scale + ')';
+      canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
     }
 
     function historyOrientation(snapshot) {

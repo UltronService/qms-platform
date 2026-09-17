@@ -20,7 +20,7 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--qms-primary);
+  background: #00321f;
   color: var(--qms-text);
   font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif;
 }
@@ -28,14 +28,15 @@ body {
 .qms-stage {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--qms-primary);
+  position: relative;
+  overflow: hidden;
+  background: #00321f;
 }
 
 .qms-canvas {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   overflow: hidden;
   transform-origin: center center;
   background: var(--qms-primary);
@@ -255,6 +256,10 @@ body {
 
 .layout-landscape-queue .qms-history-item {
   font-size: 72px;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .qms-menu-fallback {
