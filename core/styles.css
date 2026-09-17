@@ -1,0 +1,404 @@
+/* QMS shared core — portrait-menu (1080×1920) + landscape-queue (1920×1080) */
+
+:root {
+  --qms-primary: #006b3f;
+  --qms-accent: #dbee0f;
+  --qms-banner-opacity: 0.85;
+  --qms-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #00321f;
+  color: var(--qms-text);
+  font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Helvetica Neue", sans-serif;
+}
+
+.qms-stage {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #00321f;
+}
+
+.qms-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  overflow: hidden;
+  transform-origin: center center;
+  background: var(--qms-primary);
+}
+
+.layout-portrait-menu .qms-canvas {
+  width: 1080px;
+  height: 1920px;
+}
+
+.layout-landscape-queue .qms-canvas {
+  width: 1920px;
+  height: 1080px;
+  display: flex;
+  flex-direction: row;
+}
+
+.qms-banner,
+.qms-queue-wall {
+  position: relative;
+  background: var(--qms-primary);
+  overflow: hidden;
+}
+
+.layout-portrait-menu .qms-banner {
+  width: 1080px;
+  height: 18%;
+}
+
+.layout-portrait-menu .qms-menu {
+  width: 1080px;
+  height: 82%;
+  background: var(--qms-primary);
+  position: relative;
+}
+
+.layout-landscape-queue .qms-ad {
+  width: 58%;
+  height: 100%;
+  position: relative;
+  background: var(--qms-primary);
+  overflow: hidden;
+}
+
+.layout-landscape-queue .qms-queue-wall {
+  width: 42%;
+  height: 100%;
+}
+
+.qms-banner-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--qms-primary);
+  z-index: 0;
+}
+
+.qms-media-video,
+.qms-menu-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.qms-banner .qms-media-video,
+.qms-queue-wall .qms-media-video {
+  opacity: calc(1 - var(--qms-banner-opacity));
+}
+
+.qms-banner-content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+}
+
+.qms-logo-wrap {
+  position: absolute;
+  top: 50%;
+  left: 48px;
+  transform: translateY(-50%);
+  transform-origin: center center;
+  z-index: 4;
+  transition: left 0.45s cubic-bezier(0.25, 1, 0.5, 1), transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+}
+
+.qms-logo {
+  display: block;
+  height: 96px;
+  width: auto;
+  max-width: 280px;
+  object-fit: contain;
+}
+
+.qms-logo-fallback {
+  font-size: 42px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 4px;
+  height: auto;
+  padding: 12px 8px;
+}
+
+.is-standby .qms-logo-wrap {
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1.55);
+}
+
+.layout-landscape-queue .qms-logo {
+  height: 72px;
+}
+
+.layout-landscape-queue .is-standby .qms-logo-wrap {
+  top: 46%;
+  transform: translate(-50%, -50%) scale(1.8);
+}
+
+.qms-call-block {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 4;
+  transition: opacity 0.3s ease;
+}
+
+.layout-landscape-queue .qms-call-block {
+  top: 48%;
+  width: 90%;
+}
+
+.is-standby .qms-call-block,
+.is-standby .qms-history {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.qms-main-number {
+  font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 900;
+  font-size: 132px;
+  line-height: 0.9;
+  color: var(--qms-accent);
+  letter-spacing: 4px;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.qms-pickup-hint {
+  margin-top: 12px;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: #fff;
+}
+
+.layout-landscape-queue .qms-pickup-hint {
+  font-size: 42px;
+}
+
+.qms-main-number.is-pop {
+  animation: qms-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes qms-pop {
+  0% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.qms-history {
+  position: absolute;
+  right: 36px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  z-index: 4;
+}
+
+.qms-history.is-vertical {
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  bottom: 36px;
+}
+
+.qms-history-item {
+  font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  color: #fff;
+  opacity: 0.82;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.layout-landscape-queue .qms-history {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 48px;
+  width: 90%;
+  justify-content: center;
+}
+
+.layout-landscape-queue .qms-history-item {
+  font-size: 72px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.qms-menu-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--qms-primary);
+  color: #fff;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: 6px;
+}
+
+.qms-menu-fallback span {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  opacity: 0.8;
+}
+
+.qms-audio-badge {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 6;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+.qms-panel {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 420px;
+  background: rgba(12, 24, 18, 0.94);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 18px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qms-panel[hidden] {
+  display: none !important;
+}
+
+.qms-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.qms-panel h2 {
+  font-size: 24px;
+  color: var(--qms-accent);
+}
+
+.qms-panel button,
+.qms-panel input {
+  font-size: 18px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.qms-panel button {
+  background: var(--qms-primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+.qms-panel-note {
+  font-size: 14px;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+.qms-debug-row {
+  display: flex;
+  gap: 8px;
+}
+
+.qms-debug-row input {
+  flex: 1;
+  background: #1b2a22;
+  color: #fff;
+  border: 1px solid #3d5a4a;
+}
+
+.qms-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 16px;
+}
+
+.qms-meta dt {
+  opacity: 0.65;
+}
+
+.qms-error-stage {
+  background: #143326;
+}
+
+.qms-error-card {
+  max-width: 720px;
+  padding: 48px;
+  color: #fff;
+}
+
+.qms-error-card h1 {
+  font-size: 40px;
+  margin-bottom: 16px;
+  color: var(--qms-accent);
+}
+
+.qms-error-card p {
+  font-size: 22px;
+  line-height: 1.5;
+}
+
+.qms-error-hint {
+  margin-top: 18px;
+  opacity: 0.75;
+  font-size: 18px !important;
+}
