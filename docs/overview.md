@@ -1,5 +1,7 @@
 # 公版 vs 品牌包
 
+叫號引擎正式定稿：[engine-spec.md](./engine-spec.md)
+
 ## 白話
 共用叫號引擎（core）負責掃碼、叫號狀態、歷史；品牌包（brand pack）只換外觀、文案、素材與版型開關。
 

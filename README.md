@@ -2,6 +2,8 @@
 
 叫號機公版框架（core + brand packs + multi-brand URLs）
 
+叫號引擎正式定稿：[docs/engine-spec.md](docs/engine-spec.md)
+
 - Owner: **UltronService**（private）
 - Phase 1: `core/` loads `brands/<brandId>/brand.json` and renders `portrait-menu` / `landscape-queue`
 - Runtime state key: `qms_state_v1`（spirit of `guiji_qms_state_v1`）
