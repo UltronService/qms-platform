@@ -9,7 +9,7 @@
 
 ## Public demo (Phase 1 Web)
 
-After GitHub Pages is enabled (Settings → Pages → **GitHub Actions**), the static demo is served from this repo root:
+Static Phase 1 Web ships from this repo root (`index.html`, `core/`, `brands/`). Target URL:
 
 **https://ultronservice.github.io/qms-platform/**
 
@@ -17,7 +17,13 @@ After GitHub Pages is enabled (Settings → Pages → **GitHub Actions**), the s
 - Production packaging: `window.__QMS_PRODUCTION__ = true` — debug shortcuts (T / double-click / Demo) are off; long-press the logo for store mute.
 - Other brands: `?brand=<brandId>` (e.g. `?brand=guiji`).
 
-**Enable Pages (org admin, one-time):** merge the deploy workflow on `main`, then in repo **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**. On a private repo, the org needs a plan that allows **public** Pages sites (GitHub Team / Enterprise) or the repository must be public.
+**Enable Pages (org admin, one-time — same pattern as [guiji-qms-menu](https://github.com/UltronService/guiji-qms-menu)):**
+
+1. Repo **Settings → Pages → Build and deployment → Source** → **Deploy from a branch**.
+2. Branch **`main`**, folder **`/ (root)`**, save.
+3. If the repo stays **private**, either make it **public** (simplest for a public demo) or use an org plan that allows **public** Pages from private repos (GitHub Team / Enterprise).
+
+**Status (2026-09-19):** Pages is **not live yet**. The cloud agent token cannot call the Pages admin API (`403 Resource not accessible by integration`) or change repo visibility. An UltronService org owner/admin must complete the steps above.
 
 ## Run (Web / static smoke)
 
