@@ -7,6 +7,18 @@
 - Runtime state key: `qms_state_v1`（spirit of `guiji_qms_state_v1`）
 - Android Kiosk WebView skeleton: `shell/android/` (merged from PR #1)
 
+## Public demo (Phase 1 Web)
+
+After GitHub Pages is enabled (Settings → Pages → **GitHub Actions**), the static demo is served from this repo root:
+
+**https://ultronservice.github.io/qms-platform/**
+
+- Default brand: **龜記** (`guiji`) with **`portrait-menu`** (1080×1920), via `window.__QMS_BRAND_ID__` in `index.html`.
+- Production packaging: `window.__QMS_PRODUCTION__ = true` — debug shortcuts (T / double-click / Demo) are off; long-press the logo for store mute.
+- Other brands: `?brand=<brandId>` (e.g. `?brand=guiji`).
+
+**Enable Pages (org admin, one-time):** merge the deploy workflow on `main`, then in repo **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**. On a private repo, the org needs a plan that allows **public** Pages sites (GitHub Team / Enterprise) or the repository must be public.
+
 ## Run (Web / static smoke)
 
 ```bash
