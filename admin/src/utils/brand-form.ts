@@ -4,12 +4,15 @@ export function buildFormSnapshot(brand: BrandRecord): BrandFormSnapshot {
   return {
     brandId: brand.brandId,
     displayName: brand.displayName,
-    displaySettings: { ...brand.displaySettings },
+    displaySettings: {
+      ...brand.displaySettings,
+      mainBlockRegion: { ...brand.displaySettings.mainBlockRegion },
+      historyBlockRegion: { ...brand.displaySettings.historyBlockRegion },
+    },
     images: {
       logoPreviewUrl: brand.images.logoPreviewUrl,
       menuPreviewUrl: brand.images.menuPreviewUrl,
-      logoPosition: { ...brand.images.logoPosition },
-      menuPosition: { ...brand.images.menuPosition },
+      backgroundPreviewUrl: brand.images.backgroundPreviewUrl,
     },
   };
 }
@@ -22,12 +25,15 @@ export function snapshotFromForms(
   return {
     brandId: basic.brandId,
     displayName: basic.displayName,
-    displaySettings: { ...display },
+    displaySettings: {
+      ...display,
+      mainBlockRegion: { ...display.mainBlockRegion },
+      historyBlockRegion: { ...display.historyBlockRegion },
+    },
     images: {
       logoPreviewUrl: images.logoPreviewUrl,
       menuPreviewUrl: images.menuPreviewUrl,
-      logoPosition: { ...images.logoPosition },
-      menuPosition: { ...images.menuPosition },
+      backgroundPreviewUrl: images.backgroundPreviewUrl,
     },
   };
 }

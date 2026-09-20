@@ -1,4 +1,8 @@
 import type { BrandRecord } from '../types/brand';
+import {
+  getDefaultHistoryBlockRegion,
+  getDefaultMainBlockRegion,
+} from '../utils/default-block-regions';
 
 export const mockBrands: BrandRecord[] = [
   {
@@ -13,16 +17,13 @@ export const mockBrands: BrandRecord[] = [
       historyMax: 2,
       mainNumberSize: 72,
       historyDisplayMode: 'static',
-      showLogo: true,
-      showMenuArea: true,
-      showMainNumber: true,
-      showHistory: true,
+      mainBlockRegion: getDefaultMainBlockRegion('portrait-menu'),
+      historyBlockRegion: getDefaultHistoryBlockRegion('portrait-menu'),
     },
     images: {
       logoPreviewUrl: '/qms-platform/brands/guiji/assets/logo.svg',
       menuPreviewUrl: null,
-      logoPosition: { x: 0, y: 0 },
-      menuPosition: { x: 0, y: 0 },
+      backgroundPreviewUrl: null,
     },
   },
   {
@@ -37,16 +38,13 @@ export const mockBrands: BrandRecord[] = [
       historyMax: 2,
       mainNumberSize: 64,
       historyDisplayMode: 'carousel',
-      showLogo: true,
-      showMenuArea: false,
-      showMainNumber: true,
-      showHistory: true,
+      mainBlockRegion: getDefaultMainBlockRegion('landscape-queue'),
+      historyBlockRegion: getDefaultHistoryBlockRegion('landscape-queue'),
     },
     images: {
       logoPreviewUrl: null,
       menuPreviewUrl: null,
-      logoPosition: { x: 0, y: 0 },
-      menuPosition: { x: 0, y: 0 },
+      backgroundPreviewUrl: null,
     },
   },
   {
@@ -61,16 +59,13 @@ export const mockBrands: BrandRecord[] = [
       historyMax: 2,
       mainNumberSize: 80,
       historyDisplayMode: 'static',
-      showLogo: true,
-      showMenuArea: true,
-      showMainNumber: true,
-      showHistory: false,
+      mainBlockRegion: getDefaultMainBlockRegion('portrait-menu'),
+      historyBlockRegion: getDefaultHistoryBlockRegion('portrait-menu'),
     },
     images: {
       logoPreviewUrl: null,
       menuPreviewUrl: null,
-      logoPosition: { x: 0, y: 0 },
-      menuPosition: { x: 0, y: 0 },
+      backgroundPreviewUrl: null,
     },
   },
 ];

@@ -21,3 +21,14 @@ body {
 .brand-row-draft:hover > td {
   background: #fff7cc !important;
 }
+
+.brand-edit-preview-panel {
+  position: sticky;
+  top: 16px;
+}
+
+@media (max-width: 991px) {
+  .brand-edit-preview-panel {
+    position: static;
+  }
+}

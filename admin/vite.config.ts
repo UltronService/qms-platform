@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react';
 
 const devHtml = fileURLToPath(new URL('./dev.html', import.meta.url));
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: '/qms-platform/admin/',
+  base: mode === 'production' ? '/qms-platform/admin/' : '/',
   build: {
     outDir: 'build-tmp',
     emptyOutDir: true,
@@ -14,4 +14,4 @@ export default defineConfig({
       input: devHtml,
     },
   },
-});
+}));

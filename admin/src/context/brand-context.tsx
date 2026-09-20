@@ -8,6 +8,10 @@ import {
 } from 'react';
 import { mockBrands } from '../data/mock-brands';
 import type { BrandRecord } from '../types/brand';
+import {
+  getDefaultHistoryBlockRegion,
+  getDefaultMainBlockRegion,
+} from '../utils/default-block-regions';
 
 interface BrandContextValue {
   brands: BrandRecord[];
@@ -36,19 +40,25 @@ export function BrandProvider({ children }: { children: ReactNode }) {
               ...b,
               ...patch,
               displaySettings: patch.displaySettings
-                ? { ...b.displaySettings, ...patch.displaySettings }
+                ? {
+                    ...b.displaySettings,
+                    ...patch.displaySettings,
+                    mainBlockRegion: patch.displaySettings.mainBlockRegion
+                      ? {
+                          ...b.displaySettings.mainBlockRegion,
+                          ...patch.displaySettings.mainBlockRegion,
+                        }
+                      : b.displaySettings.mainBlockRegion,
+                    historyBlockRegion: patch.displaySettings.historyBlockRegion
+                      ? {
+                          ...b.displaySettings.historyBlockRegion,
+                          ...patch.displaySettings.historyBlockRegion,
+                        }
+                      : b.displaySettings.historyBlockRegion,
+                  }
                 : b.displaySettings,
               images: patch.images
-                ? {
-                    ...b.images,
-                    ...patch.images,
-                    logoPosition: patch.images.logoPosition
-                      ? { ...b.images.logoPosition, ...patch.images.logoPosition }
-                      : b.images.logoPosition,
-                    menuPosition: patch.images.menuPosition
-                      ? { ...b.images.menuPosition, ...patch.images.menuPosition }
-                      : b.images.menuPosition,
-                  }
+                ? { ...b.images, ...patch.images }
                 : b.images,
               updatedAt: new Date().toISOString(),
             }
@@ -58,28 +68,26 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addBrand = useCallback(() => {
+    const layout = 'portrait-menu' as const;
     const next: BrandRecord = {
       id: String(Date.now()),
       brandId: `brand-${Date.now()}`,
       displayName: '新品牌',
-      layout: 'portrait-menu',
+      layout,
       status: 'draft',
       updatedAt: new Date().toISOString().slice(0, 10),
       displaySettings: {
-        layout: 'portrait-menu',
+        layout,
         historyMax: 2,
         mainNumberSize: 72,
         historyDisplayMode: 'static',
-        showLogo: true,
-        showMenuArea: true,
-        showMainNumber: true,
-        showHistory: true,
+        mainBlockRegion: getDefaultMainBlockRegion(layout),
+        historyBlockRegion: getDefaultHistoryBlockRegion(layout),
       },
       images: {
         logoPreviewUrl: null,
         menuPreviewUrl: null,
-        logoPosition: { x: 0, y: 0 },
-        menuPosition: { x: 0, y: 0 },
+        backgroundPreviewUrl: null,
       },
     };
     setBrands((prev) => [next, ...prev]);
