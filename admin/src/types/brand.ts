@@ -4,27 +4,27 @@ export type BrandStatus = 'draft' | 'published';
 
 export type HistoryDisplayMode = 'static' | 'carousel';
 
+/** Percentage-based region on the call-board canvas (0–100). */
+export interface BlockRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface BrandDisplaySettings {
   layout: BrandLayout;
   historyMax: number;
   mainNumberSize: number;
   historyDisplayMode: HistoryDisplayMode;
-  showLogo: boolean;
-  showMenuArea: boolean;
-  showMainNumber: boolean;
-  showHistory: boolean;
-}
-
-export interface BrandImagePosition {
-  x: number;
-  y: number;
+  mainBlockRegion: BlockRegion;
+  historyBlockRegion: BlockRegion;
 }
 
 export interface BrandImages {
   logoPreviewUrl: string | null;
   menuPreviewUrl: string | null;
-  logoPosition: BrandImagePosition;
-  menuPosition: BrandImagePosition;
+  backgroundPreviewUrl: string | null;
 }
 
 export interface BrandRecord {
