@@ -1,7 +1,7 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
 
 interface LoginFormValues {
@@ -9,14 +9,21 @@ interface LoginFormValues {
   password: string;
 }
 
+interface LoginRedirectState {
+  from?: { pathname: string };
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const redirectPath =
+    (location.state as LoginRedirectState | null)?.from?.pathname ?? '/brands';
 
   if (isAuthenticated) {
-    return <Navigate to="/brands" replace />;
+    return <Navigate to={redirectPath} replace />;
   }
 
   const handleFinish = async (values: LoginFormValues) => {
@@ -25,7 +32,7 @@ export function LoginPage() {
     try {
       const result = await login(values.username, values.password);
       if (result.ok) {
-        navigate('/brands');
+        navigate(redirectPath, { replace: true });
         return;
       }
       setError(result.message ?? '登入失敗，請稍後再試');
