@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
@@ -16,7 +16,17 @@ for (const name of readdirSync(buildDir)) {
   const src = join(buildDir, name);
 
   if (name === 'dev.html') {
-    cpSync(src, join(root, 'index.html'));
+    const dest = join(root, 'index.html');
+    cpSync(src, dest);
+    const builtAt = new Date().toISOString();
+    const html = readFileSync(dest, 'utf8');
+    writeFileSync(
+      dest,
+      html.replace(
+        '<title>QMS Admin Preview</title>',
+        `<title>QMS Admin Preview</title>\n    <!-- admin build: ${builtAt} -->`,
+      ),
+    );
     continue;
   }
 
