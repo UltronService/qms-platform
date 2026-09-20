@@ -16,6 +16,7 @@ import {
   Radio,
   Slider,
   Space,
+  Spin,
   Switch,
   Tabs,
   Typography,
@@ -111,8 +112,16 @@ export function BrandEditPage() {
     loadFromBrand(brand);
   }, [brand, loadFromBrand]);
 
-  if (!id || !brand || !imageState) {
+  if (!id || !brand) {
     return <Navigate to="/brands" replace />;
+  }
+
+  if (!imageState) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <Spin size="large" />
+      </div>
+    );
   }
 
   const isDraft = brand.status === 'draft';
