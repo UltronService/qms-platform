@@ -47,12 +47,14 @@ Default GitHub Pages entry is **portrait** (`portrait-menu`, 1080×1920).
 
 Permanent layout still comes from **`brand.layout`** in the brand pack; query params only override for stakeholder preview (no core fork).
 
-## Motion v1 (call display)
+## Motion v1 (call display — acceptance checklist)
 
 Aligned with [guiji-qms-menu](https://github.com/UltronService/guiji-qms-menu) index.html:
 
-- **Main number:** ~0.4s pop (scale + slight bounce + fade) on new or repeat call.
-- **History:** max **2** by default; slide + fade push (not instant row swap). Horizontal = new on the left; vertical = new on the bottom.
+- **Main:** highest visual weight; ~0.4s pop (small → slight overshoot → settle); re-call same number replays pop; auto-shrink font when &gt;4 digits.
+- **Standby:** main + history hidden together; waking → logo returns first (~0.48s), then main pop.
+- **History:** max **2**; smaller / lower contrast than main; gap ≈ 30% of main digit height; enter / push / exit slide+fade only on **new call** (not refresh / clear / layout change). Horizontal = new left; vertical = new bottom.
+- **Production:** no debug panel; preview only via `?preview=1`.
 
 ## Smoke-test (main pop + history push)
 

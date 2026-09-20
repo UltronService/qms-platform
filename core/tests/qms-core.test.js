@@ -242,6 +242,13 @@ test('layout switch is exhaustive for the two mother layouts', function () {
   }, /未知版型/);
 });
 
+test('mainFontSize shrinks when number exceeds large-font threshold', function () {
+  const QMS = loadCore();
+  assert.equal(QMS.mainFontSize(4, 4, false), '132px');
+  assert.equal(QMS.mainFontSize(5, 4, false), '104px');
+  assert.equal(QMS.mainFontSize(7, 4, false), '76px');
+});
+
 test('TTS spoken text splits digits', function () {
   const QMS = loadCore();
   assert.equal(QMS.formatSpokenText('A01'), 'A 0 1');

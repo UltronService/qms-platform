@@ -67,6 +67,9 @@
     let brand = opts.brand;
     const layout = resolveLayout(brand.layout);
     const landscape = layout === 'landscape-queue';
+    /** Logo settle duration (ms) before main pop when waking from standby. */
+    const LOGO_WAKE_MS = 480;
+    let lastStandby = true;
     const canvasWidth = landscape ? 1920 : 1080;
     const canvasHeight = landscape ? 1080 : 1920;
 
@@ -114,11 +117,13 @@
         '<div class="qms-audio-badge" id="qms-audio-badge" hidden>靜音</div>';
 
       const callBlock =
+        '<div class="qms-call-zone" id="qms-call-zone">' +
         '<div class="qms-call-block">' +
         '<div class="qms-main-number" id="qms-main-number"></div>' +
         '<div class="qms-pickup-hint" id="qms-pickup-hint">' + hint + '</div>' +
         '</div>' +
-        '<div class="qms-history" id="qms-history"></div>';
+        '<div class="qms-history" id="qms-history"></div>' +
+        '</div>';
 
       let inner = '';
       switch (layout) {
@@ -258,11 +263,9 @@
 
       currentNodes.forEach(function (node) {
         if (historyList.indexOf(node.textContent) === -1) {
+          node.style.left = node.offsetLeft + 'px';
+          node.style.top = node.offsetTop + 'px';
           node.classList.add('item-exit');
-          if (vertical) {
-            node.style.top = node.offsetTop + 'px';
-            node.style.right = '0px';
-          }
           void node.offsetWidth;
           node.classList.add('item-exit-active');
           setTimeout(function () {
@@ -325,6 +328,8 @@
       const animateMain = flags && flags.animateMain;
       const animateHistory = flags && flags.animateHistory;
       const standby = !snapshot.current;
+      const wakeFromStandby = lastStandby && !standby;
+      lastStandby = standby;
       const banner = doc.getElementById('qms-banner') || doc.getElementById('qms-queue-wall');
       const main = doc.getElementById('qms-main-number');
       const hint = doc.getElementById('qms-pickup-hint');
@@ -337,24 +342,41 @@
       if (banner) {
         if (standby) {
           banner.classList.add('is-standby');
-          banner.classList.remove('is-calling');
+          banner.classList.remove('is-calling', 'is-waking');
         } else {
           banner.classList.remove('is-standby');
           banner.classList.add('is-calling');
+          if (wakeFromStandby && animateMain) {
+            banner.classList.add('is-waking');
+          } else {
+            banner.classList.remove('is-waking');
+          }
         }
       }
 
       if (main) {
         main.textContent = snapshot.current || '';
-        main.style.fontSize = mainFontSize(
+        const size = mainFontSize(
           snapshot.current ? snapshot.current.length : 0,
           brand.queue.mainNumberMaxLenForLargeFont,
           landscape
         );
+        main.style.fontSize = size;
+        doc.documentElement.style.setProperty('--qms-main-em', size);
         if (animateMain && snapshot.current) {
-          main.classList.remove('is-pop');
-          void main.offsetWidth;
-          main.classList.add('is-pop');
+          const triggerPop = function () {
+            if (banner) {
+              banner.classList.remove('is-waking');
+            }
+            main.classList.remove('is-pop');
+            void main.offsetWidth;
+            main.classList.add('is-pop');
+          };
+          if (wakeFromStandby) {
+            setTimeout(triggerPop, LOGO_WAKE_MS);
+          } else {
+            triggerPop();
+          }
         }
       }
 
@@ -377,9 +399,6 @@
       }
     }
 
-    /**
-     * @param {{ muted: boolean, ttsFailed: boolean, dingDongFailed: boolean }} audioStatus
-     */
     /**
      * @param {boolean} visible
      */
