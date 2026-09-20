@@ -7,6 +7,9 @@
 
   const QMS = (root.QMS = root.QMS || {});
 
+  /** @type {{ h1Dur: number, h2Dur: number, h2Delay: number }} */
+  const HIST_ANIM = { h1Dur: 0.5, h2Dur: 0.5, h2Delay: 0 };
+
   /**
    * @param {string} layout
    * @returns {'portrait-menu' | 'landscape-queue'}
@@ -231,6 +234,82 @@
       return snapshot.prefs.historyOrientation || brand.queue.historyOrientation || 'horizontal';
     }
 
+    /**
+     * @param {HTMLElement} historyEl
+     * @param {string[]} historyList
+     * @param {boolean} animate
+     * @param {boolean} vertical
+     */
+    function renderHistory(historyEl, historyList, animate, vertical) {
+      historyEl.classList.toggle('is-vertical', vertical);
+
+      if (!animate) {
+        historyEl.innerHTML = historyList
+          .map(function (num) {
+            return '<span class="qms-history-item">' + num + '</span>';
+          })
+          .join('');
+        return;
+      }
+
+      const currentNodes = Array.from(
+        historyEl.querySelectorAll('.qms-history-item:not(.item-exit)')
+      );
+
+      currentNodes.forEach(function (node) {
+        if (historyList.indexOf(node.textContent) === -1) {
+          node.classList.add('item-exit');
+          if (vertical) {
+            node.style.top = node.offsetTop + 'px';
+            node.style.right = '0px';
+          }
+          void node.offsetWidth;
+          node.classList.add('item-exit-active');
+          setTimeout(function () {
+            if (node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          }, HIST_ANIM.h1Dur * 1000 + 50);
+        }
+      });
+
+      historyList.forEach(function (num, index) {
+        let el = currentNodes.find(function (node) {
+          return node.textContent === num && !node.classList.contains('item-exit');
+        });
+        const activeNodes = Array.from(
+          historyEl.querySelectorAll('.qms-history-item:not(.item-exit)')
+        );
+        const refNode = activeNodes[index] || null;
+
+        if (!el) {
+          el = doc.createElement('span');
+          el.className = 'qms-history-item item-enter';
+          el.textContent = num;
+          historyEl.insertBefore(el, refNode);
+          void el.offsetWidth;
+          el.classList.add('item-enter-active');
+          setTimeout(function () {
+            el.classList.remove('item-enter', 'item-enter-active');
+          }, HIST_ANIM.h1Dur * 1000 + 50);
+          return;
+        }
+
+        historyEl.insertBefore(el, refNode);
+        el.classList.remove('item-shift', 'item-shift-active');
+        el.classList.add('item-shift');
+        void el.offsetWidth;
+        if (HIST_ANIM.h2Delay > 0) {
+          el.style.transitionDelay = HIST_ANIM.h2Delay + 's';
+        }
+        el.classList.add('item-shift-active');
+        setTimeout(function () {
+          el.classList.remove('item-shift', 'item-shift-active');
+          el.style.transitionDelay = '';
+        }, (HIST_ANIM.h2Dur + HIST_ANIM.h2Delay) * 1000 + 50);
+      });
+    }
+
     function bannerOpacity(snapshot) {
       const min = brand.theme.bannerOpacityMin;
       const preferred =
@@ -240,10 +319,11 @@
 
     /**
      * @param {object} snapshot
-     * @param {{ animate?: boolean }} [flags]
+     * @param {{ animateMain?: boolean, animateHistory?: boolean }} [flags]
      */
     function render(snapshot, flags) {
-      const animate = flags && flags.animate;
+      const animateMain = flags && flags.animateMain;
+      const animateHistory = flags && flags.animateHistory;
       const standby = !snapshot.current;
       const banner = doc.getElementById('qms-banner') || doc.getElementById('qms-queue-wall');
       const main = doc.getElementById('qms-main-number');
@@ -264,10 +344,6 @@
         }
       }
 
-      if (historyEl) {
-        historyEl.classList.toggle('is-vertical', historyOrientation(snapshot) === 'vertical');
-      }
-
       if (main) {
         main.textContent = snapshot.current || '';
         main.style.fontSize = mainFontSize(
@@ -275,7 +351,7 @@
           brand.queue.mainNumberMaxLenForLargeFont,
           landscape
         );
-        if (animate && snapshot.current) {
+        if (animateMain && snapshot.current) {
           main.classList.remove('is-pop');
           void main.offsetWidth;
           main.classList.add('is-pop');
@@ -290,11 +366,7 @@
       if (historyEl) {
         const max = brand.queue.historyMax;
         const items = snapshot.history.slice(0, max);
-        historyEl.innerHTML = items
-          .map(function (num) {
-            return '<span class="qms-history-item">' + num + '</span>';
-          })
-          .join('');
+        renderHistory(historyEl, items, !!animateHistory, historyOrientation(snapshot) === 'vertical');
       }
 
       if (storeIdEl) {
@@ -308,6 +380,31 @@
     /**
      * @param {{ muted: boolean, ttsFailed: boolean, dingDongFailed: boolean }} audioStatus
      */
+    /**
+     * @param {boolean} visible
+     */
+    function setPreviewBadge(visible) {
+      let badge = doc.getElementById('qms-preview-badge');
+      if (!visible) {
+        if (badge) {
+          badge.hidden = true;
+        }
+        return;
+      }
+      if (!badge) {
+        const host = doc.getElementById('qms-banner') || doc.getElementById('qms-queue-wall');
+        if (!host) {
+          return;
+        }
+        badge = doc.createElement('div');
+        badge.className = 'qms-preview-badge';
+        badge.id = 'qms-preview-badge';
+        badge.textContent = 'Preview · 點擊或空白鍵叫號';
+        host.appendChild(badge);
+      }
+      badge.hidden = false;
+    }
+
     function setAudioBadge(audioStatus) {
       const badge = doc.getElementById('qms-audio-badge');
       if (!badge) {
@@ -350,6 +447,7 @@
       layout: layout,
       render: render,
       setAudioBadge: setAudioBadge,
+      setPreviewBadge: setPreviewBadge,
       showFatalError: showFatalError,
       scaleCanvas: scaleCanvas,
     };

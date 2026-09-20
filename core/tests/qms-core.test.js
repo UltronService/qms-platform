@@ -73,7 +73,7 @@ const sampleBrand = {
     standbyFallback: 'logo-on-primary',
   },
   queue: {
-    historyMax: 3,
+    historyMax: 2,
     historyOrientation: 'horizontal',
     mainNumberMaxLenForLargeFont: 4,
   },
@@ -143,7 +143,7 @@ test('validate + normalize guiji brand.json fixture', function () {
   const validated = QMS.validateBrand(sampleBrand, 'guiji');
   const normalized = QMS.normalizeBrand(validated, 'brands/guiji');
   assert.equal(normalized.layout, 'portrait-menu');
-  assert.equal(normalized.queue.historyMax, 3);
+  assert.equal(normalized.queue.historyMax, 2);
   assert.equal(normalized.copy.standbyFallback, 'logo-on-primary');
   assert.equal(normalized.assets.logo, 'brands/guiji/assets/logo.svg');
   assert.equal(normalized.theme.bannerOpacityMin, 0.75);
@@ -245,4 +245,15 @@ test('layout switch is exhaustive for the two mother layouts', function () {
 test('TTS spoken text splits digits', function () {
   const QMS = loadCore();
   assert.equal(QMS.formatSpokenText('A01'), 'A 0 1');
+});
+
+test('preview query overrides layout and history orientation', function () {
+  const QMS = loadCore();
+  const validated = QMS.validateBrand(sampleBrand, 'guiji');
+  const normalized = QMS.normalizeBrand(validated, 'brands/guiji');
+  QMS.applyPreviewOverrides(normalized, {
+    search: '?layout=landscape-queue&history=vertical',
+  });
+  assert.equal(normalized.layout, 'landscape-queue');
+  assert.equal(normalized.queue.historyOrientation, 'vertical');
 });

@@ -14,7 +14,7 @@
     "standbyFallback": "logo-on-primary"
   },
   "queue": {
-    "historyMax": 3,
+    "historyMax": 2,
     "historyOrientation": "horizontal",
     "mainNumberMaxLenForLargeFont": 4
   },

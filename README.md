@@ -37,14 +37,31 @@ Open http://localhost:4173/ — demo entry loads **brands/guiji** (`portrait-men
 - Production pack: `window.__QMS_PRODUCTION__ = true` in `index.html` — **T / double-click / Demo are off**. Long-press the logo for store mute.
 - Android shell: `QMS.setDeviceId('...')` writes the reserved state field only (does not change theme).
 
-## Portrait vs landscape
+## Portrait vs landscape (preview URLs)
 
-Switch via **`brand.layout`** in the brand pack (not a core fork):
+Default GitHub Pages entry is **portrait** (`portrait-menu`, 1080×1920).
 
-- `"portrait-menu"` — 1080×1920, ~18% banner + menu, historyMax default 3 horizontal
-- `"landscape-queue"` — 1920×1080, left ad / right queue wall
+- **Portrait preview:** open `/` (or `/?brand=guiji`).
+- **Landscape preview:** open `/?layout=landscape-queue` (1920×1080, left ad / right queue wall).
+- **Vertical history:** add `&history=vertical` (default is horizontal, new number on the left / bottom).
 
-Example: set `brands/guiji/brand.json` `"layout"` to `landscape-queue`, reload.
+Permanent layout still comes from **`brand.layout`** in the brand pack; query params only override for stakeholder preview (no core fork).
+
+## Motion v1 (call display)
+
+Aligned with [guiji-qms-menu](https://github.com/UltronService/guiji-qms-menu) index.html:
+
+- **Main number:** ~0.4s pop (scale + slight bounce + fade) on new or repeat call.
+- **History:** max **2** by default; slide + fade push (not instant row swap). Horizontal = new on the left; vertical = new on the bottom.
+
+## Smoke-test (main pop + history push)
+
+Production build keeps T / Demo off. Use the gated preview flag:
+
+1. Open `/?preview=1` (portrait) or `/?preview=1&layout=landscape-queue` (landscape).
+2. Click the green banner (not the logo) or press **Space** / **Enter** — each step advances 321→330 and loops.
+3. Expect: main number pops; previous main slides into history (max 2) with push animation; third push drops the oldest with slide-out fade.
+4. Repeat the same number: main pops again; history stays put.
 
 ## Test
 

@@ -68,7 +68,7 @@
         }
 
         const ui = QMS.createUi({ brand: brand });
-        ui.render(store.getSnapshot(), { animate: false });
+        ui.render(store.getSnapshot(), { animateMain: false, animateHistory: false });
         ui.setAudioBadge(audio.getStatus());
 
         audio.subscribe(function (status) {
@@ -76,7 +76,10 @@
         });
 
         store.subscribe(function (kind, snapshot) {
-          ui.render(snapshot, { animate: kind === 'call' || kind === 'repeat' });
+          ui.render(snapshot, {
+            animateMain: kind === 'call' || kind === 'repeat',
+            animateHistory: kind === 'call',
+          });
           if (kind === 'call' || kind === 'repeat') {
             audio.announce(snapshot.current, brand.copy.pickupHint);
           }
@@ -146,6 +149,42 @@
 
         if (typeof root.__QMS_DEVICE_ID__ === 'string' && root.__QMS_DEVICE_ID__) {
           store.setDeviceId(root.__QMS_DEVICE_ID__);
+        }
+
+        if (queryFlag('preview')) {
+          ui.setPreviewBadge(true);
+          let previewCounter = 320;
+          const advancePreview = function () {
+            previewCounter += 1;
+            if (previewCounter > 330) {
+              previewCounter = 321;
+            }
+            applyScan(String(previewCounter).padStart(3, '0'));
+          };
+          const previewTarget = root.document.getElementById('qms-banner') ||
+            root.document.getElementById('qms-queue-wall');
+          if (previewTarget) {
+            previewTarget.addEventListener('click', function (event) {
+              if (event.target && event.target.closest && event.target.closest('.qms-panel')) {
+                return;
+              }
+              if (event.target && event.target.closest && event.target.closest('#qms-logo-hit')) {
+                return;
+              }
+              advancePreview();
+            });
+          }
+          root.document.addEventListener('keydown', function (event) {
+            const tag =
+              event.target && event.target.tagName ? String(event.target.tagName).toLowerCase() : '';
+            if (tag === 'input' || tag === 'textarea') {
+              return;
+            }
+            if (event.key === ' ' || event.key === 'Enter') {
+              event.preventDefault();
+              advancePreview();
+            }
+          });
         }
       })
       .catch(function (error) {

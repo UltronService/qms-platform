@@ -5,6 +5,13 @@
   --qms-accent: #dbee0f;
   --qms-banner-opacity: 0.85;
   --qms-text: #ffffff;
+  --hist1-dur: 0.5s;
+  --hist1-ease: ease-out;
+  --hist1-x: 0px;
+  --hist2-dur: 0.5s;
+  --hist2-ease: ease-out;
+  --hist2-delay: 0s;
+  --hist2-x: 0px;
 }
 
 * {
@@ -247,6 +254,83 @@ body {
   color: #fff;
   opacity: 0.82;
   text-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  line-height: 1;
+  will-change: transform, opacity;
+}
+
+/* History push v1 — slide + fade (horizontal: new left; vertical: new bottom) */
+.qms-history-item.item-enter {
+  transform: translateX(calc(-60px + var(--hist1-x)));
+  opacity: 0;
+  transition: transform var(--hist1-dur) var(--hist1-ease), opacity var(--hist1-dur) var(--hist1-ease);
+}
+
+.qms-history-item.item-enter.item-enter-active {
+  transform: translateX(0);
+  opacity: 0.82;
+}
+
+.qms-history-item.item-shift {
+  transform: translateX(calc(-100% - 20px + var(--hist2-x)));
+  transition: transform var(--hist2-dur) var(--hist2-ease);
+}
+
+.qms-history-item.item-shift.item-shift-active {
+  transform: translateX(0);
+}
+
+.qms-history-item.item-exit {
+  position: absolute;
+  right: 36px;
+  bottom: 28px;
+  opacity: 0.82;
+  transform: translateX(0);
+  transition: transform calc(var(--hist1-dur) * 0.6) var(--hist1-ease),
+    opacity calc(var(--hist1-dur) * 0.5) var(--hist1-ease);
+  pointer-events: none;
+}
+
+.qms-history-item.item-exit.item-exit-active {
+  opacity: 0;
+  transform: translateX(120px);
+}
+
+.qms-history.is-vertical .qms-history-item.item-enter {
+  transform: translateY(40px);
+}
+
+.qms-history.is-vertical .qms-history-item.item-enter.item-enter-active {
+  transform: translateY(0);
+}
+
+.qms-history.is-vertical .qms-history-item.item-shift {
+  transform: translateY(calc(100% + 8px));
+}
+
+.qms-history.is-vertical .qms-history-item.item-shift.item-shift-active {
+  transform: translateY(0);
+}
+
+.qms-history.is-vertical .qms-history-item.item-exit {
+  right: 36px;
+  bottom: auto;
+  transform: translateY(0);
+}
+
+.qms-history.is-vertical .qms-history-item.item-exit.item-exit-active {
+  opacity: 0;
+  transform: translateY(-40px);
+}
+
+.layout-landscape-queue .qms-history-item.item-exit {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.layout-landscape-queue .qms-history-item.item-exit.item-exit-active {
+  transform: translateX(calc(-50% + 120px));
 }
 
 .layout-landscape-queue .qms-history {
@@ -289,7 +373,8 @@ body {
   opacity: 0.8;
 }
 
-.qms-audio-badge {
+.qms-audio-badge,
+.qms-preview-badge {
   position: absolute;
   top: 16px;
   right: 20px;
@@ -302,6 +387,13 @@ body {
   padding: 8px 16px;
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+.qms-preview-badge {
+  right: auto;
+  left: 20px;
+  border-color: rgba(219, 238, 15, 0.65);
+  color: var(--qms-accent);
 }
 
 .qms-panel {

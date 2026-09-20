@@ -65,6 +65,26 @@
   }
 
   /**
+   * @param {{ layout?: string, queue?: { historyOrientation?: string } }} brand
+   * @param {{ search?: string }} locationLike
+   */
+  function applyPreviewOverrides(brand, locationLike) {
+    const loc = locationLike || {};
+    const search = loc.search || '';
+    const params = new URLSearchParams(search.charAt(0) === '?' ? search.slice(1) : search);
+    const layout = (params.get('layout') || '').trim();
+    if (KNOWN_LAYOUTS.indexOf(layout) !== -1) {
+      brand.layout = layout;
+    }
+    const history = (params.get('history') || '').trim();
+    if (history === 'vertical' || history === 'horizontal') {
+      if (brand.queue) {
+        brand.queue.historyOrientation = history;
+      }
+    }
+  }
+
+  /**
    * @param {string} brandId
    * @returns {string}
    */
@@ -176,7 +196,7 @@
         standbyFallback: 'logo-on-primary',
       },
       queue: {
-        historyMax: Number.isFinite(historyMaxRaw) && historyMaxRaw > 0 ? historyMaxRaw : 3,
+        historyMax: Number.isFinite(historyMaxRaw) && historyMaxRaw > 0 ? historyMaxRaw : 2,
         historyOrientation: historyOrientation,
         mainNumberMaxLenForLargeFont:
           Number(queue.mainNumberMaxLenForLargeFont) > 0
@@ -245,13 +265,20 @@
       })
       .then(function (data) {
         const validated = validateBrand(data, id);
-        return normalizeBrand(validated, base);
+        const normalized = normalizeBrand(validated, base);
+        const locationLike =
+          root.location != null
+            ? { search: root.location.search }
+            : opts.locationLike || { search: '' };
+        applyPreviewOverrides(normalized, locationLike);
+        return normalized;
       });
   }
 
   QMS.BrandLoadError = BrandLoadError;
   QMS.KNOWN_LAYOUTS = KNOWN_LAYOUTS;
   QMS.resolveBrandId = resolveBrandId;
+  QMS.applyPreviewOverrides = applyPreviewOverrides;
   QMS.brandBasePath = brandBasePath;
   QMS.resolveAssetPath = resolveAssetPath;
   QMS.validateBrand = validateBrand;
