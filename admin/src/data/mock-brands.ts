@@ -7,10 +7,12 @@ export const mockBrands: BrandRecord[] = [
     displayName: '龜記',
     layout: 'portrait-menu',
     status: 'published',
-    updatedAt: '2026-09-18',
+    updatedAt: '2026-09-18T14:30:00',
     displaySettings: {
       layout: 'portrait-menu',
       historyMax: 2,
+      mainNumberSize: 72,
+      historyDisplayMode: 'static',
       showLogo: true,
       showMenuArea: true,
       showMainNumber: true,
@@ -19,6 +21,8 @@ export const mockBrands: BrandRecord[] = [
     images: {
       logoPreviewUrl: '/qms-platform/brands/guiji/assets/logo.svg',
       menuPreviewUrl: null,
+      logoPosition: { x: 0, y: 0 },
+      menuPosition: { x: 0, y: 0 },
     },
   },
   {
@@ -27,10 +31,12 @@ export const mockBrands: BrandRecord[] = [
     displayName: 'Demo 茶飲',
     layout: 'landscape-queue',
     status: 'draft',
-    updatedAt: '2026-09-15',
+    updatedAt: '2026-09-15T09:15:00',
     displaySettings: {
       layout: 'landscape-queue',
       historyMax: 2,
+      mainNumberSize: 64,
+      historyDisplayMode: 'carousel',
       showLogo: true,
       showMenuArea: false,
       showMainNumber: true,
@@ -39,6 +45,8 @@ export const mockBrands: BrandRecord[] = [
     images: {
       logoPreviewUrl: null,
       menuPreviewUrl: null,
+      logoPosition: { x: 0, y: 0 },
+      menuPosition: { x: 0, y: 0 },
     },
   },
   {
@@ -47,10 +55,12 @@ export const mockBrands: BrandRecord[] = [
     displayName: 'Demo 漢堡',
     layout: 'portrait-menu',
     status: 'published',
-    updatedAt: '2026-09-10',
+    updatedAt: '2026-09-10T16:45:00',
     displaySettings: {
       layout: 'portrait-menu',
       historyMax: 2,
+      mainNumberSize: 80,
+      historyDisplayMode: 'static',
       showLogo: true,
       showMenuArea: true,
       showMainNumber: true,
@@ -59,6 +69,8 @@ export const mockBrands: BrandRecord[] = [
     images: {
       logoPreviewUrl: null,
       menuPreviewUrl: null,
+      logoPosition: { x: 0, y: 0 },
+      menuPosition: { x: 0, y: 0 },
     },
   },
 ];

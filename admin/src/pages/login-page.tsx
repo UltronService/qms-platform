@@ -28,7 +28,7 @@ export function LoginPage() {
         navigate('/brands');
         return;
       }
-      setError(result.message ?? '登入失敗');
+      setError(result.message ?? '登入失敗，請稍後再試');
     } catch {
       setError('登入時發生錯誤，請稍後再試');
     } finally {
@@ -52,7 +52,7 @@ export function LoginPage() {
           <Typography.Title level={3} style={{ marginBottom: 4 }}>
             UltronService QMS
           </Typography.Title>
-          <Typography.Text type="secondary">Admin CMS 視覺預覽</Typography.Text>
+          <Typography.Text type="secondary">Admin CMS</Typography.Text>
         </div>
 
         {error && (
@@ -61,8 +61,6 @@ export function LoginPage() {
             type="error"
             showIcon
             style={{ marginBottom: 16 }}
-            closable
-            onClose={() => setError(null)}
           />
         )}
 
@@ -79,7 +77,7 @@ export function LoginPage() {
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="admin"
+              placeholder="請輸入帳號"
               autoComplete="username"
               size="large"
             />
@@ -91,24 +89,17 @@ export function LoginPage() {
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="••••••••"
+              placeholder="請輸入密碼"
               autoComplete="current-password"
               size="large"
             />
           </Form.Item>
-          <Form.Item style={{ marginBottom: 8 }}>
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" block size="large" loading={loading}>
               登入
             </Button>
           </Form.Item>
         </Form>
-
-        <Typography.Paragraph
-          type="secondary"
-          style={{ fontSize: 12, textAlign: 'center', marginBottom: 0, marginTop: 16 }}
-        >
-          預覽帳密：admin / preview · 無真實後端
-        </Typography.Paragraph>
       </Card>
     </div>
   );

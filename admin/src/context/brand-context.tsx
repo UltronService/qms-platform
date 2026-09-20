@@ -38,8 +38,19 @@ export function BrandProvider({ children }: { children: ReactNode }) {
               displaySettings: patch.displaySettings
                 ? { ...b.displaySettings, ...patch.displaySettings }
                 : b.displaySettings,
-              images: patch.images ? { ...b.images, ...patch.images } : b.images,
-              updatedAt: new Date().toISOString().slice(0, 10),
+              images: patch.images
+                ? {
+                    ...b.images,
+                    ...patch.images,
+                    logoPosition: patch.images.logoPosition
+                      ? { ...b.images.logoPosition, ...patch.images.logoPosition }
+                      : b.images.logoPosition,
+                    menuPosition: patch.images.menuPosition
+                      ? { ...b.images.menuPosition, ...patch.images.menuPosition }
+                      : b.images.menuPosition,
+                  }
+                : b.images,
+              updatedAt: new Date().toISOString(),
             }
           : b,
       ),
@@ -57,12 +68,19 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       displaySettings: {
         layout: 'portrait-menu',
         historyMax: 2,
+        mainNumberSize: 72,
+        historyDisplayMode: 'static',
         showLogo: true,
         showMenuArea: true,
         showMainNumber: true,
         showHistory: true,
       },
-      images: { logoPreviewUrl: null, menuPreviewUrl: null },
+      images: {
+        logoPreviewUrl: null,
+        menuPreviewUrl: null,
+        logoPosition: { x: 0, y: 0 },
+        menuPosition: { x: 0, y: 0 },
+      },
     };
     setBrands((prev) => [next, ...prev]);
     return next;

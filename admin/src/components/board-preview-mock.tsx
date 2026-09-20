@@ -1,4 +1,5 @@
-import { Typography } from 'antd';
+import { SyncOutlined } from '@ant-design/icons';
+import { Space, Typography } from 'antd';
 import type { BrandDisplaySettings } from '../types/brand';
 
 interface BoardPreviewMockProps {
@@ -8,6 +9,7 @@ interface BoardPreviewMockProps {
 
 export function BoardPreviewMock({ displayName, settings }: BoardPreviewMockProps) {
   const isPortrait = settings.layout === 'portrait-menu';
+  const isCarousel = settings.historyDisplayMode === 'carousel';
 
   return (
     <div
@@ -76,27 +78,41 @@ export function BoardPreviewMock({ displayName, settings }: BoardPreviewMockProp
           }}
         >
           {settings.showMainNumber && (
-            <Typography.Title level={1} style={{ color: '#fff', margin: 0, fontSize: 36 }}>
+            <Typography.Title
+              level={1}
+              style={{
+                color: '#fff',
+                margin: 0,
+                fontSize: settings.mainNumberSize,
+                lineHeight: 1.1,
+              }}
+            >
               A128
             </Typography.Title>
           )}
           {settings.showHistory && (
-            <div style={{ display: 'flex', gap: 6 }}>
-              {Array.from({ length: settings.historyMax }).map((_, i) => (
-                <span
-                  key={i}
-                  style={{
-                    background: 'rgba(255,255,255,0.2)',
-                    color: '#fff',
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    fontSize: 11,
-                  }}
-                >
-                  A{120 + i}
-                </span>
-              ))}
-            </div>
+            <Space size={6}>
+              {isCarousel && (
+                <SyncOutlined spin style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }} />
+              )}
+              <div style={{ display: 'flex', gap: 6 }}>
+                {Array.from({ length: settings.historyMax }).map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: 'rgba(255,255,255,0.2)',
+                      color: '#fff',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                      opacity: isCarousel && i > 0 ? 0.5 : 1,
+                    }}
+                  >
+                    A{120 + i}
+                  </span>
+                ))}
+              </div>
+            </Space>
           )}
         </div>
         {!isPortrait && settings.showMenuArea && (
@@ -125,7 +141,8 @@ export function BoardPreviewMock({ displayName, settings }: BoardPreviewMockProp
           textAlign: 'center',
         }}
       >
-        {displayName} · {isPortrait ? '直式' : '橫式'} · 靜態預覽
+        {displayName} · {isPortrait ? '直式' : '橫式'} ·{' '}
+        {isCarousel ? '歷史輪播' : '歷史並排'} · 靜態預覽
       </div>
     </div>
   );

@@ -58,7 +58,7 @@ Ant Design React 後台預覽，供利害關係人點擊走查；按鈕與表單
 | 品牌列表 | https://ultronservice.github.io/qms-platform/admin/#/brands |
 | 品牌編輯 | https://ultronservice.github.io/qms-platform/admin/#/brands/1/edit |
 
-- 預覽帳密：`admin` / `preview`（僅供 UI 走查，非正式帳號）
+- 登入頁不含帳密提示（UI 走查原則）；內部走查帳密：`admin` / `preview`
 - 本地開發：`cd admin && npm install && npm run dev`，開啟終端機顯示的 localhost 網址
 - 重新建置靜態檔：`cd admin && npm run build`（產出會寫入 `admin/index.html` 與 `admin/assets/` 供 Pages 部署）
 

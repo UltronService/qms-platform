@@ -13,3 +13,11 @@ body {
 #root {
   min-height: 100vh;
 }
+
+.brand-row-draft {
+  background: #fffbe6 !important;
+}
+
+.brand-row-draft:hover > td {
+  background: #fff7cc !important;
+}

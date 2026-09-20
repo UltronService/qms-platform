@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: true };
     }
 
-    return { ok: false, message: '帳號或密碼錯誤（預覽：admin / preview）' };
+    return { ok: false, message: '帳號或密碼不正確，請再試一次' };
   }, []);
 
   const logout = useCallback(() => {
