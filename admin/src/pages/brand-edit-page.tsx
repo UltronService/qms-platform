@@ -429,7 +429,7 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
                 看板預覽
               </Typography.Title>
               <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 12 }}>
-                拖曳 Logo、主叫號、歷史、菜單四區塊調整位置與大小；選取區塊後可在預覽下方輸入 X/Y/寬/高；需要時可開啟「吸附」對齊。
+                拖曳 Logo、主叫號、歷史、菜單四區塊自由調整位置與大小；選取區塊後可在預覽下方輸入 X/Y/寬/高；預設關閉「吸附：開／關」，需要時再開啟弱對齊。
               </Typography.Paragraph>
               <BoardPreviewEditor
                 displayName={displayName}
