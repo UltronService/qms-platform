@@ -10,6 +10,15 @@ export const SAFETY_MESSAGES = {
 
 export type SafetyViolation = keyof typeof SAFETY_MESSAGES;
 
+export type BlockKind = 'logo' | 'main' | 'history' | 'menu';
+
+export interface BlockLayout {
+  logo: BlockRegion;
+  main: BlockRegion;
+  history: BlockRegion;
+  menu: BlockRegion;
+}
+
 export interface SafetyResult {
   valid: boolean;
   violation: SafetyViolation | null;
@@ -51,33 +60,40 @@ function overlapsImageContent(
 }
 
 export function validateBlockLayout(
-  mainBlock: BlockRegion,
-  historyBlock: BlockRegion,
+  blocks: BlockLayout,
   layout: 'portrait-menu' | 'landscape-queue',
   hasLogo: boolean,
   hasMenu: boolean,
-  movedBlock?: 'main' | 'history',
+  movedBlock?: BlockKind,
 ): SafetyResult {
   const zones = getLayoutZones(layout);
 
-  for (const region of [mainBlock, historyBlock]) {
+  for (const region of Object.values(blocks)) {
     if (!isInsideSafeFrame(region, zones.safeFrame)) {
       return { valid: false, violation: 'leaveSafeFrame', message: SAFETY_MESSAGES.leaveSafeFrame };
     }
   }
 
-  if (overlapsImageContent(mainBlock, zones.logo, zones.menu, hasLogo, hasMenu)) {
+  if (overlapsImageContent(blocks.main, blocks.logo, blocks.menu, hasLogo, hasMenu)) {
     return { valid: false, violation: 'cropImage', message: SAFETY_MESSAGES.cropImage };
   }
 
-  if (overlapsImageContent(historyBlock, zones.logo, zones.menu, hasLogo, hasMenu)) {
+  if (overlapsImageContent(blocks.history, blocks.logo, blocks.menu, hasLogo, hasMenu)) {
     return { valid: false, violation: 'cropImage', message: SAFETY_MESSAGES.cropImage };
   }
 
-  if (rectsOverlap(mainBlock, historyBlock)) {
-    if (movedBlock === 'history') {
+  if (rectsOverlap(blocks.main, blocks.history)) {
+    if (movedBlock === 'history' || movedBlock === 'menu') {
       return { valid: false, violation: 'coverMain', message: SAFETY_MESSAGES.coverMain };
     }
+    return { valid: false, violation: 'coverHistory', message: SAFETY_MESSAGES.coverHistory };
+  }
+
+  if (rectsOverlap(blocks.main, blocks.logo) && (movedBlock === 'logo' || movedBlock === 'menu')) {
+    return { valid: false, violation: 'coverMain', message: SAFETY_MESSAGES.coverMain };
+  }
+
+  if (rectsOverlap(blocks.history, blocks.menu) && (movedBlock === 'logo' || movedBlock === 'menu')) {
     return { valid: false, violation: 'coverHistory', message: SAFETY_MESSAGES.coverHistory };
   }
 
@@ -101,4 +117,17 @@ export function clampRegion(region: BlockRegion): BlockRegion {
 
 export function getZonesForLayout(layout: 'portrait-menu' | 'landscape-queue'): LayoutZones {
   return getLayoutZones(layout);
+}
+
+export function regionToPixelMetrics(
+  region: BlockRegion,
+  canvasWidth: number,
+  canvasHeight: number,
+): { x: number; y: number; width: number; height: number } {
+  return {
+    x: Math.round((region.x / 100) * canvasWidth),
+    y: Math.round((region.y / 100) * canvasHeight),
+    width: Math.round((region.width / 100) * canvasWidth),
+    height: Math.round((region.height / 100) * canvasHeight),
+  };
 }

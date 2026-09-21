@@ -28,7 +28,6 @@ import { DraftBanner } from '../components/draft-banner';
 import { useBrands } from '../context/brand-context';
 import { confirmLeave, useUnsavedBlocker } from '../hooks/use-unsaved-blocker';
 import type {
-  BlockRegion,
   BrandDisplaySettings,
   BrandFormSnapshot,
   BrandImages,
@@ -40,9 +39,12 @@ import {
   snapshotFromForms,
   snapshotsEqual,
 } from '../utils/brand-form';
+import type { BlockLayout } from '../utils/block-safety';
 import {
   getDefaultHistoryBlockRegion,
+  getDefaultLogoBlockRegion,
   getDefaultMainBlockRegion,
+  getDefaultMenuBlockRegion,
 } from '../utils/default-block-regions';
 
 interface BasicFormValues {
@@ -82,8 +84,10 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
   const [displayForm] = Form.useForm<DisplayFormValues>();
   const [previewSettings, setPreviewSettings] = useState<BrandDisplaySettings>(() => ({
     ...initialBrand.displaySettings,
+    logoBlockRegion: { ...initialBrand.displaySettings.logoBlockRegion },
     mainBlockRegion: { ...initialBrand.displaySettings.mainBlockRegion },
     historyBlockRegion: { ...initialBrand.displaySettings.historyBlockRegion },
+    menuBlockRegion: { ...initialBrand.displaySettings.menuBlockRegion },
   }));
   const [displayName, setDisplayName] = useState(initialBrand.displayName);
   const [imageState, setImageState] = useState<BrandImages>(() => ({ ...initialBrand.images }));
@@ -140,8 +144,10 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
       mainNumberSize: display.mainNumberSize,
       ...(layoutChanged
         ? {
+            logoBlockRegion: getDefaultLogoBlockRegion(display.layout),
             mainBlockRegion: getDefaultMainBlockRegion(display.layout),
             historyBlockRegion: getDefaultHistoryBlockRegion(display.layout),
+            menuBlockRegion: getDefaultMenuBlockRegion(display.layout),
           }
         : {}),
     };
@@ -218,48 +224,41 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
     }
   };
 
-  const handleFakeUpload = (kind: 'logo' | 'menu' | 'background') => {
-    const placeholders: Record<'logo' | 'menu' | 'background', string> = {
-      logo:
-        'data:image/svg+xml,' +
-        encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><rect fill="#006B3F" width="120" height="40" rx="4"/><text x="60" y="25" fill="#DBEE0F" text-anchor="middle" font-size="12">LOGO</text></svg>',
-        ),
-      menu:
-        'data:image/svg+xml,' +
-        encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><rect fill="#333" width="200" height="120"/><text x="100" y="65" fill="#888" text-anchor="middle" font-size="12">Menu</text></svg>',
-        ),
-      background:
-        'data:image/svg+xml,' +
-        encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a4a32"/><stop offset="100%" stop-color="#0a1a12"/></linearGradient></defs><rect fill="url(#g)" width="400" height="600"/></svg>',
-        ),
-    };
-
-    setImageState((prev) => {
-      if (!prev) {
-        return prev;
+  const handleImageUpload = (kind: 'logo' | 'menu' | 'background', file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        message.error('圖片讀取失敗');
+        return;
       }
-      const next = {
-        ...prev,
-        ...(kind === 'logo'
-          ? { logoPreviewUrl: placeholders.logo }
-          : kind === 'menu'
-            ? { menuPreviewUrl: placeholders.menu }
-            : { backgroundPreviewUrl: placeholders.background }),
-      };
-      syncSnapshotWithImages(next);
-      return next;
-    });
-    message.info('圖片已加入預覽（假上傳）');
+
+      setImageState((prev) => {
+        const next: BrandImages = {
+          ...prev,
+          ...(kind === 'logo'
+            ? { logoPreviewUrl: reader.result as string }
+            : kind === 'menu'
+              ? { menuPreviewUrl: reader.result as string }
+              : { backgroundPreviewUrl: reader.result as string }),
+        };
+        syncSnapshotWithImages(next);
+        return next;
+      });
+      message.success('圖片已加入預覽');
+    };
+    reader.onerror = () => {
+      message.error('圖片讀取失敗，請稍後再試');
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleBlocksChange = (main: BlockRegion, history: BlockRegion) => {
+  const handleBlocksChange = (blocks: BlockLayout) => {
     const nextSettings: BrandDisplaySettings = {
       ...previewSettings,
-      mainBlockRegion: main,
-      historyBlockRegion: history,
+      logoBlockRegion: blocks.logo,
+      mainBlockRegion: blocks.main,
+      historyBlockRegion: blocks.history,
+      menuBlockRegion: blocks.menu,
     };
     setPreviewSettings(nextSettings);
     syncSnapshot(undefined, undefined, undefined, nextSettings);
@@ -280,8 +279,8 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
         <Upload
           listType="picture-card"
           showUploadList={false}
-          beforeUpload={() => {
-            handleFakeUpload(kind);
+          beforeUpload={(file) => {
+            handleImageUpload(kind, file);
             return false;
           }}
         >
@@ -430,7 +429,7 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
                 看板預覽
               </Typography.Title>
               <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 12 }}>
-                拖曳主叫號區與歷史區調整位置與大小；對齊時會顯示輔助線並自動吸附。
+                拖曳 Logo、主叫號、歷史、菜單四區塊調整位置與大小；選取區塊顯示 X/Y/W/H；對齊時顯示紅色輔助線並自動吸附。
               </Typography.Paragraph>
               <BoardPreviewEditor
                 displayName={displayName}

@@ -1,16 +1,18 @@
 import { SyncOutlined } from '@ant-design/icons';
 import { Typography, message } from 'antd';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { BlockRegion, BrandDisplaySettings, BrandImages } from '../types/brand';
+import type { BlockRegion, BrandDisplaySettings, BrandImages, BrandLayout } from '../types/brand';
 import {
   clampRegion,
   getZonesForLayout,
+  regionToPixelMetrics,
   validateBlockLayout,
+  type BlockKind,
+  type BlockLayout,
   type SnapGuide,
 } from '../utils/block-safety';
 import './board-preview-editor.css';
 
-type BlockKind = 'main' | 'history';
 type ResizeHandle =
   | 'n'
   | 's'
@@ -25,7 +27,7 @@ interface BoardPreviewEditorProps {
   displayName: string;
   settings: BrandDisplaySettings;
   images: BrandImages;
-  onBlocksChange: (main: BlockRegion, history: BlockRegion) => void;
+  onBlocksChange: (blocks: BlockLayout) => void;
 }
 
 interface DragState {
@@ -37,8 +39,20 @@ interface DragState {
   origin: BlockRegion;
 }
 
-const SNAP_PX = 6;
+const SNAP_PX = 16;
 const MIN_BLOCK_PCT = 8;
+
+const CANVAS_DIMS: Record<BrandLayout, { width: number; height: number }> = {
+  'portrait-menu': { width: 1080, height: 1920 },
+  'landscape-queue': { width: 1920, height: 1080 },
+};
+
+const BLOCK_LABELS: Record<BlockKind, string> = {
+  logo: 'Logo',
+  main: '主叫號區',
+  history: '歷史區',
+  menu: '菜單區',
+};
 
 function regionStyle(region: BlockRegion): CSSProperties {
   return {
@@ -57,11 +71,42 @@ function pxToPct(value: number, total: number): number {
   return (value / total) * 100;
 }
 
+function regionEdges(region: BlockRegion, canvasW: number, canvasH: number) {
+  const left = pctToPx(region.x, canvasW);
+  const right = pctToPx(region.x + region.width, canvasW);
+  const centerX = pctToPx(region.x + region.width / 2, canvasW);
+  const top = pctToPx(region.y, canvasH);
+  const bottom = pctToPx(region.y + region.height, canvasH);
+  const centerY = pctToPx(region.y + region.height / 2, canvasH);
+  return { left, right, centerX, top, bottom, centerY };
+}
+
+function collectEdgeTargets(
+  regions: BlockRegion[],
+  canvasW: number,
+  canvasH: number,
+): {
+  xTargets: number[];
+  yTargets: number[];
+} {
+  const xTargets = [canvasW / 2];
+  const yTargets = [canvasH / 2];
+
+  for (const region of regions) {
+    const edges = regionEdges(region, canvasW, canvasH);
+    xTargets.push(edges.left, edges.centerX, edges.right);
+    yTargets.push(edges.top, edges.centerY, edges.bottom);
+  }
+
+  return { xTargets, yTargets };
+}
+
 function collectSnapGuides(
   region: BlockRegion,
   canvasW: number,
   canvasH: number,
-  other: BlockRegion | null,
+  snapTargets: BlockRegion[],
+  safeFrame: BlockRegion,
 ): { region: BlockRegion; guides: SnapGuide[] } {
   const guides: SnapGuide[] = [];
   let { x, y, width, height } = region;
@@ -85,39 +130,37 @@ function collectSnapGuides(
     { edge: bottom, setY: (t) => { y = pxToPct(t, canvasH) - height; } },
   ];
 
-  const xTargets = [0, canvasW / 2, canvasW];
-  const yTargets = [0, canvasH / 2, canvasH];
-
-  if (other) {
-    xTargets.push(
-      pctToPx(other.x, canvasW),
-      pctToPx(other.x + other.width / 2, canvasW),
-      pctToPx(other.x + other.width, canvasW),
-    );
-    yTargets.push(
-      pctToPx(other.y, canvasH),
-      pctToPx(other.y + other.height / 2, canvasH),
-      pctToPx(other.y + other.height, canvasH),
-    );
-  }
+  const { xTargets, yTargets } = collectEdgeTargets([safeFrame, ...snapTargets], canvasW, canvasH);
 
   for (const snap of xSnaps) {
+    let bestDist = SNAP_PX + 1;
+    let bestTarget = 0;
     for (const target of xTargets) {
-      if (Math.abs(snap.edge - target) <= SNAP_PX) {
-        snap.setX(target);
-        guides.push({ orientation: 'vertical', positionPx: target });
-        break;
+      const dist = Math.abs(snap.edge - target);
+      if (dist <= SNAP_PX && dist < bestDist) {
+        bestDist = dist;
+        bestTarget = target;
       }
+    }
+    if (bestDist <= SNAP_PX) {
+      snap.setX(bestTarget);
+      guides.push({ orientation: 'vertical', positionPx: bestTarget });
     }
   }
 
   for (const snap of ySnaps) {
+    let bestDist = SNAP_PX + 1;
+    let bestTarget = 0;
     for (const target of yTargets) {
-      if (Math.abs(snap.edge - target) <= SNAP_PX) {
-        snap.setY(target);
-        guides.push({ orientation: 'horizontal', positionPx: target });
-        break;
+      const dist = Math.abs(snap.edge - target);
+      if (dist <= SNAP_PX && dist < bestDist) {
+        bestDist = dist;
+        bestTarget = target;
       }
+    }
+    if (bestDist <= SNAP_PX) {
+      snap.setY(bestTarget);
+      guides.push({ orientation: 'horizontal', positionPx: bestTarget });
     }
   }
 
@@ -154,6 +197,26 @@ function applyResize(
 
 const HANDLES: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
+function BlockMetrics({
+  region,
+  canvasWidth,
+  canvasHeight,
+}: {
+  region: BlockRegion;
+  canvasWidth: number;
+  canvasHeight: number;
+}) {
+  const px = regionToPixelMetrics(region, canvasWidth, canvasHeight);
+  return (
+    <div className="board-block-metrics">
+      <span>X: {px.x}</span>
+      <span>Y: {px.y}</span>
+      <span>W: {px.width}</span>
+      <span>H: {px.height}</span>
+    </div>
+  );
+}
+
 export function BoardPreviewEditor({
   displayName,
   settings,
@@ -162,40 +225,92 @@ export function BoardPreviewEditor({
 }: BoardPreviewEditorProps) {
   const isPortrait = settings.layout === 'portrait-menu';
   const zones = getZonesForLayout(settings.layout);
+  const canvasDims = CANVAS_DIMS[settings.layout];
   const canvasRef = useRef<HTMLDivElement>(null);
   const [guides, setGuides] = useState<SnapGuide[]>([]);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [selected, setSelected] = useState<BlockKind | null>(null);
+  const [liveLogo, setLiveLogo] = useState(settings.logoBlockRegion);
   const [liveMain, setLiveMain] = useState(settings.mainBlockRegion);
   const [liveHistory, setLiveHistory] = useState(settings.historyBlockRegion);
-  const lastValidRef = useRef({
+  const [liveMenu, setLiveMenu] = useState(settings.menuBlockRegion);
+  const lastValidRef = useRef<BlockLayout>({
+    logo: settings.logoBlockRegion,
     main: settings.mainBlockRegion,
     history: settings.historyBlockRegion,
+    menu: settings.menuBlockRegion,
   });
-  const liveMainRef = useRef(liveMain);
-  const liveHistoryRef = useRef(liveHistory);
+  const liveBlocksRef = useRef<BlockLayout>({
+    logo: liveLogo,
+    main: liveMain,
+    history: liveHistory,
+    menu: liveMenu,
+  });
   const dragRef = useRef<DragState | null>(null);
 
-  liveMainRef.current = liveMain;
-  liveHistoryRef.current = liveHistory;
+  liveBlocksRef.current = {
+    logo: liveLogo,
+    main: liveMain,
+    history: liveHistory,
+    menu: liveMenu,
+  };
   dragRef.current = drag;
 
   useEffect(() => {
-    setLiveMain(settings.mainBlockRegion);
-    setLiveHistory(settings.historyBlockRegion);
-    lastValidRef.current = {
+    const next: BlockLayout = {
+      logo: settings.logoBlockRegion,
       main: settings.mainBlockRegion,
       history: settings.historyBlockRegion,
+      menu: settings.menuBlockRegion,
     };
-  }, [settings.mainBlockRegion, settings.historyBlockRegion]);
+    setLiveLogo(next.logo);
+    setLiveMain(next.main);
+    setLiveHistory(next.history);
+    setLiveMenu(next.menu);
+    lastValidRef.current = next;
+  }, [
+    settings.logoBlockRegion,
+    settings.mainBlockRegion,
+    settings.historyBlockRegion,
+    settings.menuBlockRegion,
+  ]);
 
   const hasLogo = Boolean(images.logoPreviewUrl);
   const hasMenu = Boolean(images.menuPreviewUrl);
 
+  const getBlockRegion = useCallback(
+    (kind: BlockKind): BlockRegion => {
+      const blocks = liveBlocksRef.current;
+      return blocks[kind];
+    },
+    [],
+  );
+
+  const setBlockRegion = useCallback((kind: BlockKind, region: BlockRegion) => {
+    liveBlocksRef.current = {
+      ...liveBlocksRef.current,
+      [kind]: region,
+    };
+
+    if (kind === 'logo') {
+      setLiveLogo(region);
+      return;
+    }
+    if (kind === 'main') {
+      setLiveMain(region);
+      return;
+    }
+    if (kind === 'history') {
+      setLiveHistory(region);
+      return;
+    }
+    setLiveMenu(region);
+  }, []);
+
   const finishDrag = useCallback(
-    (main: BlockRegion, history: BlockRegion, movedBlock: BlockKind) => {
+    (blocks: BlockLayout, movedBlock: BlockKind) => {
       const result = validateBlockLayout(
-        main,
-        history,
+        blocks,
         settings.layout,
         hasLogo,
         hasMenu,
@@ -204,14 +319,16 @@ export function BoardPreviewEditor({
 
       if (!result.valid && result.message) {
         message.warning(result.message);
+        setLiveLogo(lastValidRef.current.logo);
         setLiveMain(lastValidRef.current.main);
         setLiveHistory(lastValidRef.current.history);
+        setLiveMenu(lastValidRef.current.menu);
         setGuides([]);
         return;
       }
 
-      lastValidRef.current = { main, history };
-      onBlocksChange(main, history);
+      lastValidRef.current = blocks;
+      onBlocksChange(blocks);
       setGuides([]);
     },
     [hasLogo, hasMenu, onBlocksChange, settings.layout],
@@ -232,9 +349,9 @@ export function BoardPreviewEditor({
       const dxPct = pxToPct(event.clientX - drag.startX, rect.width);
       const dyPct = pxToPct(event.clientY - drag.startY, rect.height);
 
-      const otherKind: BlockKind = drag.kind === 'main' ? 'history' : 'main';
-      const otherBlock =
-        otherKind === 'main' ? liveMain : liveHistory;
+      const otherBlocks = (['logo', 'main', 'history', 'menu'] as BlockKind[])
+        .filter((kind) => kind !== drag.kind)
+        .map((kind) => getBlockRegion(kind));
 
       let next: BlockRegion;
       if (drag.mode === 'move') {
@@ -249,14 +366,9 @@ export function BoardPreviewEditor({
         return;
       }
 
-      const snapped = collectSnapGuides(next, rect.width, rect.height, otherBlock);
+      const snapped = collectSnapGuides(next, rect.width, rect.height, otherBlocks, zones.safeFrame);
       setGuides(snapped.guides);
-
-      if (drag.kind === 'main') {
-        setLiveMain(snapped.region);
-      } else {
-        setLiveHistory(snapped.region);
-      }
+      setBlockRegion(drag.kind, snapped.region);
     };
 
     const onUp = () => {
@@ -265,11 +377,7 @@ export function BoardPreviewEditor({
         return;
       }
 
-      finishDrag(
-        liveMainRef.current,
-        liveHistoryRef.current,
-        activeDrag.kind,
-      );
+      finishDrag(liveBlocksRef.current, activeDrag.kind);
       setDrag(null);
     };
 
@@ -279,7 +387,7 @@ export function BoardPreviewEditor({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [drag, finishDrag, liveHistory, liveMain, settings.historyBlockRegion, settings.mainBlockRegion]);
+  }, [drag, finishDrag, getBlockRegion, setBlockRegion, zones.safeFrame]);
 
   const startDrag = (
     kind: BlockKind,
@@ -289,7 +397,8 @@ export function BoardPreviewEditor({
   ) => {
     event.preventDefault();
     event.stopPropagation();
-    const origin = kind === 'main' ? liveMain : liveHistory;
+    setSelected(kind);
+    const origin = getBlockRegion(kind);
     setDrag({
       kind,
       mode,
@@ -305,23 +414,40 @@ export function BoardPreviewEditor({
     region: BlockRegion,
     content: React.ReactNode,
     label: string,
-  ) => (
-    <div
-      className={`board-block board-block--${kind}`}
-      style={regionStyle(region)}
-      onPointerDown={(e) => startDrag(kind, 'move', e)}
-    >
-      <span className="board-block-label">{label}</span>
-      {content}
-      {HANDLES.map((handle) => (
-        <div
-          key={handle}
-          className={`board-handle board-handle--${handle}`}
-          onPointerDown={(e) => startDrag(kind, 'resize', e, handle)}
-        />
-      ))}
-    </div>
-  );
+  ) => {
+    const isActive = selected === kind || drag?.kind === kind;
+    const isSnapped = isActive && guides.length > 0;
+
+    return (
+      <div
+        className={[
+          'board-block',
+          `board-block--${kind}`,
+          isActive ? 'board-block--selected' : '',
+          isSnapped ? 'board-block--snapped' : '',
+        ].filter(Boolean).join(' ')}
+        style={regionStyle(region)}
+        onPointerDown={(e) => startDrag(kind, 'move', e)}
+      >
+        <span className="board-block-label">{label}</span>
+        {isActive && (
+          <BlockMetrics
+            region={region}
+            canvasWidth={canvasDims.width}
+            canvasHeight={canvasDims.height}
+          />
+        )}
+        {content}
+        {HANDLES.map((handle) => (
+          <div
+            key={handle}
+            className={`board-handle board-handle--${handle}`}
+            onPointerDown={(e) => startDrag(kind, 'resize', e, handle)}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const isCarousel = settings.historyDisplayMode === 'carousel';
 
@@ -330,6 +456,7 @@ export function BoardPreviewEditor({
       <div
         ref={canvasRef}
         className={`board-canvas ${isPortrait ? 'board-canvas--portrait' : 'board-canvas--landscape'}`}
+        onPointerDown={() => setSelected(null)}
       >
         {images.backgroundPreviewUrl ? (
           <img
@@ -341,25 +468,31 @@ export function BoardPreviewEditor({
           <div className="board-bg board-bg--fallback" />
         )}
 
-        <div className="board-menu-zone" style={regionStyle(zones.menu)}>
-          {images.menuPreviewUrl ? (
-            <img src={images.menuPreviewUrl} alt="菜單" className="board-menu-img" />
+        <div className="board-safe-frame" style={regionStyle(zones.safeFrame)} />
+
+        {renderBlock(
+          'menu',
+          liveMenu,
+          images.menuPreviewUrl ? (
+            <img src={images.menuPreviewUrl} alt="菜單" className="board-zone-img" />
           ) : (
             <span className="board-zone-placeholder">
               {isPortrait ? '菜單區' : '廣告區'}
             </span>
-          )}
-        </div>
+          ),
+          isPortrait ? '菜單區' : '廣告區',
+        )}
 
-        <div className="board-logo-zone" style={regionStyle(zones.logo)}>
-          {images.logoPreviewUrl ? (
-            <img src={images.logoPreviewUrl} alt="Logo" className="board-logo-img" />
+        {renderBlock(
+          'logo',
+          liveLogo,
+          images.logoPreviewUrl ? (
+            <img src={images.logoPreviewUrl} alt="Logo" className="board-zone-img" />
           ) : (
             <span className="board-zone-placeholder board-logo-fallback">{displayName}</span>
-          )}
-        </div>
-
-        <div className="board-safe-frame" style={regionStyle(zones.safeFrame)} />
+          ),
+          'Logo',
+        )}
 
         {renderBlock(
           'main',
@@ -371,7 +504,7 @@ export function BoardPreviewEditor({
           >
             A128
           </Typography.Title>,
-          '主叫號區',
+          BLOCK_LABELS.main,
         )}
 
         {renderBlock(
@@ -393,7 +526,7 @@ export function BoardPreviewEditor({
               ))}
             </div>
           </div>,
-          '歷史區',
+          BLOCK_LABELS.history,
         )}
 
         {guides.map((guide, i) => (
@@ -409,7 +542,7 @@ export function BoardPreviewEditor({
         ))}
       </div>
       <div className="board-preview-caption">
-        {displayName} · {isPortrait ? '直式 1080×1920' : '橫式 1920×1080'} · 拖曳調整區塊
+        {displayName} · {isPortrait ? '直式 1080×1920' : '橫式 1920×1080'} · 拖曳四區塊調整
       </div>
     </div>
   );
