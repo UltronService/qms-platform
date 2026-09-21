@@ -6,8 +6,10 @@ export function buildFormSnapshot(brand: BrandRecord): BrandFormSnapshot {
     displayName: brand.displayName,
     displaySettings: {
       ...brand.displaySettings,
+      logoBlockRegion: { ...brand.displaySettings.logoBlockRegion },
       mainBlockRegion: { ...brand.displaySettings.mainBlockRegion },
       historyBlockRegion: { ...brand.displaySettings.historyBlockRegion },
+      menuBlockRegion: { ...brand.displaySettings.menuBlockRegion },
     },
     images: {
       logoPreviewUrl: brand.images.logoPreviewUrl,
@@ -27,8 +29,10 @@ export function snapshotFromForms(
     displayName: basic.displayName,
     displaySettings: {
       ...display,
+      logoBlockRegion: { ...display.logoBlockRegion },
       mainBlockRegion: { ...display.mainBlockRegion },
       historyBlockRegion: { ...display.historyBlockRegion },
+      menuBlockRegion: { ...display.menuBlockRegion },
     },
     images: {
       logoPreviewUrl: images.logoPreviewUrl,

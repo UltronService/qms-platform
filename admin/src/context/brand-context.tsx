@@ -10,7 +10,9 @@ import { mockBrands } from '../data/mock-brands';
 import type { BrandRecord } from '../types/brand';
 import {
   getDefaultHistoryBlockRegion,
+  getDefaultLogoBlockRegion,
   getDefaultMainBlockRegion,
+  getDefaultMenuBlockRegion,
 } from '../utils/default-block-regions';
 
 interface BrandContextValue {
@@ -43,6 +45,12 @@ export function BrandProvider({ children }: { children: ReactNode }) {
                 ? {
                     ...b.displaySettings,
                     ...patch.displaySettings,
+                    logoBlockRegion: patch.displaySettings.logoBlockRegion
+                      ? {
+                          ...b.displaySettings.logoBlockRegion,
+                          ...patch.displaySettings.logoBlockRegion,
+                        }
+                      : b.displaySettings.logoBlockRegion,
                     mainBlockRegion: patch.displaySettings.mainBlockRegion
                       ? {
                           ...b.displaySettings.mainBlockRegion,
@@ -55,6 +63,12 @@ export function BrandProvider({ children }: { children: ReactNode }) {
                           ...patch.displaySettings.historyBlockRegion,
                         }
                       : b.displaySettings.historyBlockRegion,
+                    menuBlockRegion: patch.displaySettings.menuBlockRegion
+                      ? {
+                          ...b.displaySettings.menuBlockRegion,
+                          ...patch.displaySettings.menuBlockRegion,
+                        }
+                      : b.displaySettings.menuBlockRegion,
                   }
                 : b.displaySettings,
               images: patch.images
@@ -81,8 +95,10 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         historyMax: 2,
         mainNumberSize: 72,
         historyDisplayMode: 'static',
+        logoBlockRegion: getDefaultLogoBlockRegion(layout),
         mainBlockRegion: getDefaultMainBlockRegion(layout),
         historyBlockRegion: getDefaultHistoryBlockRegion(layout),
+        menuBlockRegion: getDefaultMenuBlockRegion(layout),
       },
       images: {
         logoPreviewUrl: null,

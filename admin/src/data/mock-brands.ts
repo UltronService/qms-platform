@@ -1,7 +1,9 @@
 import type { BrandRecord } from '../types/brand';
 import {
   getDefaultHistoryBlockRegion,
+  getDefaultLogoBlockRegion,
   getDefaultMainBlockRegion,
+  getDefaultMenuBlockRegion,
 } from '../utils/default-block-regions';
 
 export const mockBrands: BrandRecord[] = [
@@ -17,8 +19,10 @@ export const mockBrands: BrandRecord[] = [
       historyMax: 2,
       mainNumberSize: 72,
       historyDisplayMode: 'static',
+      logoBlockRegion: getDefaultLogoBlockRegion('portrait-menu'),
       mainBlockRegion: getDefaultMainBlockRegion('portrait-menu'),
       historyBlockRegion: getDefaultHistoryBlockRegion('portrait-menu'),
+      menuBlockRegion: getDefaultMenuBlockRegion('portrait-menu'),
     },
     images: {
       logoPreviewUrl: '/qms-platform/brands/guiji/assets/logo.svg',
@@ -38,8 +42,10 @@ export const mockBrands: BrandRecord[] = [
       historyMax: 2,
       mainNumberSize: 64,
       historyDisplayMode: 'carousel',
+      logoBlockRegion: getDefaultLogoBlockRegion('landscape-queue'),
       mainBlockRegion: getDefaultMainBlockRegion('landscape-queue'),
       historyBlockRegion: getDefaultHistoryBlockRegion('landscape-queue'),
+      menuBlockRegion: getDefaultMenuBlockRegion('landscape-queue'),
     },
     images: {
       logoPreviewUrl: null,
@@ -59,8 +65,10 @@ export const mockBrands: BrandRecord[] = [
       historyMax: 2,
       mainNumberSize: 80,
       historyDisplayMode: 'static',
+      logoBlockRegion: getDefaultLogoBlockRegion('portrait-menu'),
       mainBlockRegion: getDefaultMainBlockRegion('portrait-menu'),
       historyBlockRegion: getDefaultHistoryBlockRegion('portrait-menu'),
+      menuBlockRegion: getDefaultMenuBlockRegion('portrait-menu'),
     },
     images: {
       logoPreviewUrl: null,

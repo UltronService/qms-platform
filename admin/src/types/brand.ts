@@ -17,8 +17,10 @@ export interface BrandDisplaySettings {
   historyMax: number;
   mainNumberSize: number;
   historyDisplayMode: HistoryDisplayMode;
+  logoBlockRegion: BlockRegion;
   mainBlockRegion: BlockRegion;
   historyBlockRegion: BlockRegion;
+  menuBlockRegion: BlockRegion;
 }
 
 export interface BrandImages {

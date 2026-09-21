@@ -17,16 +17,24 @@ export function getDefaultMainBlockRegion(layout: BrandLayout): BlockRegion {
 
 export function getDefaultHistoryBlockRegion(layout: BrandLayout): BlockRegion {
   if (layout === 'portrait-menu') {
-    return { x: 10, y: 42, width: 80, height: 10 };
+    return { x: 10, y: 38, width: 80, height: 10 };
   }
   return { x: 52, y: 64, width: 42, height: 14 };
+}
+
+export function getDefaultLogoBlockRegion(layout: BrandLayout): BlockRegion {
+  return { ...getLayoutZones(layout).logo };
+}
+
+export function getDefaultMenuBlockRegion(layout: BrandLayout): BlockRegion {
+  return { ...getLayoutZones(layout).menu };
 }
 
 export function getLayoutZones(layout: BrandLayout): LayoutZones {
   if (layout === 'portrait-menu') {
     return {
-      logo: { x: 5, y: 2, width: 90, height: 14 },
-      menu: { x: 0, y: 45, width: 100, height: 55 },
+      logo: { x: 5, y: 5, width: 90, height: 12 },
+      menu: { x: 5, y: 50, width: 90, height: 45 },
       safeFrame: {
         x: SAFE_FRAME_INSET,
         y: SAFE_FRAME_INSET,
@@ -37,8 +45,8 @@ export function getLayoutZones(layout: BrandLayout): LayoutZones {
   }
 
   return {
-    logo: { x: 52, y: 2, width: 42, height: 10 },
-    menu: { x: 0, y: 0, width: 50, height: 100 },
+    logo: { x: 52, y: 5, width: 42, height: 10 },
+    menu: { x: 5, y: 5, width: 42, height: 90 },
     safeFrame: {
       x: SAFE_FRAME_INSET,
       y: SAFE_FRAME_INSET,
