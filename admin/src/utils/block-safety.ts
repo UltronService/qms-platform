@@ -119,15 +119,35 @@ export function getZonesForLayout(layout: 'portrait-menu' | 'landscape-queue'): 
   return getLayoutZones(layout);
 }
 
+export interface PixelMetrics {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export function regionToPixelMetrics(
   region: BlockRegion,
   canvasWidth: number,
   canvasHeight: number,
-): { x: number; y: number; width: number; height: number } {
+): PixelMetrics {
   return {
     x: Math.round((region.x / 100) * canvasWidth),
     y: Math.round((region.y / 100) * canvasHeight),
     width: Math.round((region.width / 100) * canvasWidth),
     height: Math.round((region.height / 100) * canvasHeight),
   };
+}
+
+export function pixelMetricsToRegion(
+  metrics: PixelMetrics,
+  canvasWidth: number,
+  canvasHeight: number,
+): BlockRegion {
+  return clampRegion({
+    x: (metrics.x / canvasWidth) * 100,
+    y: (metrics.y / canvasHeight) * 100,
+    width: (metrics.width / canvasWidth) * 100,
+    height: (metrics.height / canvasHeight) * 100,
+  });
 }
