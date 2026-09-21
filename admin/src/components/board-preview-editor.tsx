@@ -3,14 +3,13 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import { Button, InputNumber, Space, Switch, Typography, message } from 'antd';
+import { Button, InputNumber, Space, Switch, Typography } from 'antd';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { BlockRegion, BrandDisplaySettings, BrandImages, BrandLayout } from '../types/brand';
 import {
   clampRegion,
   pixelMetricsToRegion,
   regionToPixelMetrics,
-  validateBlockLayout,
   type BlockKind,
   type BlockLayout,
   type PixelMetrics,
@@ -44,7 +43,7 @@ interface DragState {
   origin: BlockRegion;
 }
 
-const SNAP_PX = 6;
+const SNAP_PX = 3;
 const MIN_BLOCK_PCT = 8;
 const ZOOM_MIN = 0.75;
 const ZOOM_MAX = 2;
@@ -292,6 +291,7 @@ export function BoardPreviewEditor({
   const [drag, setDrag] = useState<DragState | null>(null);
   const [selected, setSelected] = useState<BlockKind | null>(null);
   const [snapEnabled, setSnapEnabled] = useState(false);
+  const [snapHint, setSnapHint] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [liveLogo, setLiveLogo] = useState(settings.logoBlockRegion);
   const [liveMain, setLiveMain] = useState(settings.mainBlockRegion);
@@ -310,6 +310,8 @@ export function BoardPreviewEditor({
     menu: liveMenu,
   });
   const dragRef = useRef<DragState | null>(null);
+  const guidesRef = useRef<SnapGuide[]>([]);
+  const snapHintTimerRef = useRef<number | null>(null);
 
   liveBlocksRef.current = {
     logo: liveLogo,
@@ -318,6 +320,7 @@ export function BoardPreviewEditor({
     menu: liveMenu,
   };
   dragRef.current = drag;
+  guidesRef.current = guides;
 
   useEffect(() => {
     const next: BlockLayout = {
@@ -338,8 +341,6 @@ export function BoardPreviewEditor({
     settings.menuBlockRegion,
   ]);
 
-  const hasLogo = Boolean(images.logoPreviewUrl);
-  const hasMenu = Boolean(images.menuPreviewUrl);
 
   const getBlockRegion = useCallback(
     (kind: BlockKind): BlockRegion => {
@@ -371,35 +372,17 @@ export function BoardPreviewEditor({
   }, []);
 
   const commitBlocks = useCallback(
-    (blocks: BlockLayout, movedBlock: BlockKind) => {
-      const result = validateBlockLayout(
-        blocks,
-        settings.layout,
-        hasLogo,
-        hasMenu,
-        movedBlock,
-      );
-
-      if (!result.valid && result.message) {
-        message.warning(result.message);
-        setLiveLogo(lastValidRef.current.logo);
-        setLiveMain(lastValidRef.current.main);
-        setLiveHistory(lastValidRef.current.history);
-        setLiveMenu(lastValidRef.current.menu);
-        setGuides([]);
-        return;
-      }
-
+    (blocks: BlockLayout) => {
       lastValidRef.current = blocks;
       onBlocksChange(blocks);
       setGuides([]);
     },
-    [hasLogo, hasMenu, onBlocksChange, settings.layout],
+    [onBlocksChange],
   );
 
   const finishDrag = useCallback(
-    (blocks: BlockLayout, movedBlock: BlockKind) => {
-      commitBlocks(blocks, movedBlock);
+    (blocks: BlockLayout) => {
+      commitBlocks(blocks);
     },
     [commitBlocks],
   );
@@ -412,10 +395,18 @@ export function BoardPreviewEditor({
         [kind]: nextRegion,
       };
       setBlockRegion(kind, nextRegion);
-      commitBlocks(nextBlocks, kind);
+      commitBlocks(nextBlocks);
     },
     [canvasDims.height, canvasDims.width, commitBlocks, setBlockRegion],
   );
+
+  useEffect(() => {
+    return () => {
+      if (snapHintTimerRef.current !== null) {
+        window.clearTimeout(snapHintTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!drag) {
@@ -466,7 +457,18 @@ export function BoardPreviewEditor({
         return;
       }
 
-      finishDrag(liveBlocksRef.current, activeDrag.kind);
+      if (snapEnabled && guidesRef.current.length > 0) {
+        setSnapHint('已對齊參考線');
+        if (snapHintTimerRef.current !== null) {
+          window.clearTimeout(snapHintTimerRef.current);
+        }
+        snapHintTimerRef.current = window.setTimeout(() => {
+          setSnapHint(null);
+          snapHintTimerRef.current = null;
+        }, 1200);
+      }
+
+      finishDrag(liveBlocksRef.current);
       setDrag(null);
     };
 
@@ -486,6 +488,10 @@ export function BoardPreviewEditor({
   ) => {
     event.preventDefault();
     event.stopPropagation();
+    setSnapHint(null);
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     setSelected(kind);
     const origin = getBlockRegion(kind);
     setDrag({
@@ -507,7 +513,8 @@ export function BoardPreviewEditor({
     label: string,
   ) => {
     const isActive = selected === kind || drag?.kind === kind;
-    const isSnapped = snapEnabled && isActive && guides.length > 0;
+    const isDragging = drag?.kind === kind;
+    const isSnapped = snapEnabled && isDragging && guides.length > 0;
 
     return (
       <div
@@ -515,6 +522,7 @@ export function BoardPreviewEditor({
           'board-block',
           `board-block--${kind}`,
           isActive ? 'board-block--selected' : '',
+          isDragging ? 'board-block--dragging' : '',
           isSnapped ? 'board-block--snapped' : '',
         ].filter(Boolean).join(' ')}
         style={regionStyle(region)}
@@ -572,13 +580,23 @@ export function BoardPreviewEditor({
             {Math.round(zoom * 100)}%
           </Typography.Text>
         </Space>
-        <Switch
-          size="small"
-          checked={snapEnabled}
-          onChange={setSnapEnabled}
-          checkedChildren="吸附"
-          unCheckedChildren="吸附"
-        />
+        <Space size={4} align="center">
+          <Typography.Text type="secondary" className="board-preview-snap-label">
+            吸附：
+          </Typography.Text>
+          <Switch
+            size="small"
+            checked={snapEnabled}
+            onChange={setSnapEnabled}
+            checkedChildren="開"
+            unCheckedChildren="關"
+          />
+          {snapHint && (
+            <Typography.Text type="secondary" className="board-preview-snap-hint">
+              {snapHint}
+            </Typography.Text>
+          )}
+        </Space>
       </div>
 
       <div className="board-preview-viewport">

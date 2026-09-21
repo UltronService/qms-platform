@@ -15,6 +15,15 @@
   min-width: 40px;
 }
 
+.board-preview-snap-label {
+  font-size: 12px;
+}
+
+.board-preview-snap-hint {
+  font-size: 11px;
+  margin-left: 4px;
+}
+
 .board-preview-viewport {
   overflow: auto;
   max-height: 70vh;
@@ -120,12 +129,20 @@
 .board-block--selected {
   border-color: #1890ff;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.45);
+  cursor: grab;
   z-index: 5;
+}
+
+.board-block--dragging {
+  cursor: grabbing !important;
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 3px rgba(64, 169, 255, 0.55);
+  z-index: 10;
 }
 
 .board-block--snapped {
   border-color: #ff7875;
-  box-shadow: 0 0 0 2px rgba(255, 120, 117, 0.55);
+  box-shadow: 0 0 0 2px rgba(255, 120, 117, 0.45);
 }
 
 .board-block-label {
@@ -225,17 +242,15 @@
 .board-guide--vertical {
   top: 0;
   bottom: 0;
-  width: 2px;
-  background: #ff4d4f;
-  box-shadow: 0 0 6px rgba(255, 77, 79, 0.85);
+  width: 1px;
+  background: rgba(255, 120, 117, 0.75);
 }
 
 .board-guide--horizontal {
   left: 0;
   right: 0;
-  height: 2px;
-  background: #ff4d4f;
-  box-shadow: 0 0 6px rgba(255, 77, 79, 0.85);
+  height: 1px;
+  background: rgba(255, 120, 117, 0.75);
 }
 
 .board-preview-caption {
