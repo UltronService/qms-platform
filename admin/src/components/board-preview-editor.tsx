@@ -1,14 +1,19 @@
-import { SyncOutlined } from '@ant-design/icons';
-import { Typography, message } from 'antd';
+import {
+  SyncOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from '@ant-design/icons';
+import { Button, InputNumber, Space, Switch, Typography, message } from 'antd';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { BlockRegion, BrandDisplaySettings, BrandImages, BrandLayout } from '../types/brand';
 import {
   clampRegion,
-  getZonesForLayout,
+  pixelMetricsToRegion,
   regionToPixelMetrics,
   validateBlockLayout,
   type BlockKind,
   type BlockLayout,
+  type PixelMetrics,
   type SnapGuide,
 } from '../utils/block-safety';
 import './board-preview-editor.css';
@@ -39,8 +44,11 @@ interface DragState {
   origin: BlockRegion;
 }
 
-const SNAP_PX = 16;
+const SNAP_PX = 6;
 const MIN_BLOCK_PCT = 8;
+const ZOOM_MIN = 0.75;
+const ZOOM_MAX = 2;
+const ZOOM_STEP = 0.25;
 
 const CANVAS_DIMS: Record<BrandLayout, { width: number; height: number }> = {
   'portrait-menu': { width: 1080, height: 1920 },
@@ -106,7 +114,6 @@ function collectSnapGuides(
   canvasW: number,
   canvasH: number,
   snapTargets: BlockRegion[],
-  safeFrame: BlockRegion,
 ): { region: BlockRegion; guides: SnapGuide[] } {
   const guides: SnapGuide[] = [];
   let { x, y, width, height } = region;
@@ -130,7 +137,7 @@ function collectSnapGuides(
     { edge: bottom, setY: (t) => { y = pxToPct(t, canvasH) - height; } },
   ];
 
-  const { xTargets, yTargets } = collectEdgeTargets([safeFrame, ...snapTargets], canvasW, canvasH);
+  const { xTargets, yTargets } = collectEdgeTargets(snapTargets, canvasW, canvasH);
 
   for (const snap of xSnaps) {
     let bestDist = SNAP_PX + 1;
@@ -197,22 +204,77 @@ function applyResize(
 
 const HANDLES: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
-function BlockMetrics({
-  region,
-  canvasWidth,
-  canvasHeight,
-}: {
+interface BlockRegionInputsProps {
+  kind: BlockKind;
   region: BlockRegion;
   canvasWidth: number;
   canvasHeight: number;
-}) {
+  onChange: (metrics: PixelMetrics) => void;
+}
+
+function BlockRegionInputs({
+  kind,
+  region,
+  canvasWidth,
+  canvasHeight,
+  onChange,
+}: BlockRegionInputsProps) {
   const px = regionToPixelMetrics(region, canvasWidth, canvasHeight);
+
+  const handleFieldChange = (field: keyof PixelMetrics, value: number | null) => {
+    if (value === null || Number.isNaN(value)) {
+      return;
+    }
+    onChange({ ...px, [field]: value });
+  };
+
   return (
-    <div className="board-block-metrics">
-      <span>X: {px.x}</span>
-      <span>Y: {px.y}</span>
-      <span>W: {px.width}</span>
-      <span>H: {px.height}</span>
+    <div className="board-region-inputs">
+      <Typography.Text type="secondary" className="board-region-inputs__label">
+        {BLOCK_LABELS[kind]} 位置與尺寸（px）
+      </Typography.Text>
+      <Space wrap size="small">
+        <label className="board-region-inputs__field">
+          <span>X</span>
+          <InputNumber
+            size="small"
+            min={0}
+            max={canvasWidth}
+            value={px.x}
+            onChange={(value) => handleFieldChange('x', value)}
+          />
+        </label>
+        <label className="board-region-inputs__field">
+          <span>Y</span>
+          <InputNumber
+            size="small"
+            min={0}
+            max={canvasHeight}
+            value={px.y}
+            onChange={(value) => handleFieldChange('y', value)}
+          />
+        </label>
+        <label className="board-region-inputs__field">
+          <span>寬</span>
+          <InputNumber
+            size="small"
+            min={1}
+            max={canvasWidth}
+            value={px.width}
+            onChange={(value) => handleFieldChange('width', value)}
+          />
+        </label>
+        <label className="board-region-inputs__field">
+          <span>高</span>
+          <InputNumber
+            size="small"
+            min={1}
+            max={canvasHeight}
+            value={px.height}
+            onChange={(value) => handleFieldChange('height', value)}
+          />
+        </label>
+      </Space>
     </div>
   );
 }
@@ -224,12 +286,13 @@ export function BoardPreviewEditor({
   onBlocksChange,
 }: BoardPreviewEditorProps) {
   const isPortrait = settings.layout === 'portrait-menu';
-  const zones = getZonesForLayout(settings.layout);
   const canvasDims = CANVAS_DIMS[settings.layout];
   const canvasRef = useRef<HTMLDivElement>(null);
   const [guides, setGuides] = useState<SnapGuide[]>([]);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [selected, setSelected] = useState<BlockKind | null>(null);
+  const [snapEnabled, setSnapEnabled] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const [liveLogo, setLiveLogo] = useState(settings.logoBlockRegion);
   const [liveMain, setLiveMain] = useState(settings.mainBlockRegion);
   const [liveHistory, setLiveHistory] = useState(settings.historyBlockRegion);
@@ -307,7 +370,7 @@ export function BoardPreviewEditor({
     setLiveMenu(region);
   }, []);
 
-  const finishDrag = useCallback(
+  const commitBlocks = useCallback(
     (blocks: BlockLayout, movedBlock: BlockKind) => {
       const result = validateBlockLayout(
         blocks,
@@ -332,6 +395,26 @@ export function BoardPreviewEditor({
       setGuides([]);
     },
     [hasLogo, hasMenu, onBlocksChange, settings.layout],
+  );
+
+  const finishDrag = useCallback(
+    (blocks: BlockLayout, movedBlock: BlockKind) => {
+      commitBlocks(blocks, movedBlock);
+    },
+    [commitBlocks],
+  );
+
+  const applyPixelMetrics = useCallback(
+    (kind: BlockKind, metrics: PixelMetrics) => {
+      const nextRegion = pixelMetricsToRegion(metrics, canvasDims.width, canvasDims.height);
+      const nextBlocks: BlockLayout = {
+        ...liveBlocksRef.current,
+        [kind]: nextRegion,
+      };
+      setBlockRegion(kind, nextRegion);
+      commitBlocks(nextBlocks, kind);
+    },
+    [canvasDims.height, canvasDims.width, commitBlocks, setBlockRegion],
   );
 
   useEffect(() => {
@@ -366,9 +449,15 @@ export function BoardPreviewEditor({
         return;
       }
 
-      const snapped = collectSnapGuides(next, rect.width, rect.height, otherBlocks, zones.safeFrame);
-      setGuides(snapped.guides);
-      setBlockRegion(drag.kind, snapped.region);
+      if (snapEnabled) {
+        const snapped = collectSnapGuides(next, rect.width, rect.height, otherBlocks);
+        setGuides(snapped.guides);
+        setBlockRegion(drag.kind, snapped.region);
+        return;
+      }
+
+      setGuides([]);
+      setBlockRegion(drag.kind, next);
     };
 
     const onUp = () => {
@@ -387,7 +476,7 @@ export function BoardPreviewEditor({
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [drag, finishDrag, getBlockRegion, setBlockRegion, zones.safeFrame]);
+  }, [drag, finishDrag, getBlockRegion, setBlockRegion, snapEnabled]);
 
   const startDrag = (
     kind: BlockKind,
@@ -409,6 +498,8 @@ export function BoardPreviewEditor({
     });
   };
 
+  const selectedRegion = selected ? getBlockRegion(selected) : null;
+
   const renderBlock = (
     kind: BlockKind,
     region: BlockRegion,
@@ -416,7 +507,7 @@ export function BoardPreviewEditor({
     label: string,
   ) => {
     const isActive = selected === kind || drag?.kind === kind;
-    const isSnapped = isActive && guides.length > 0;
+    const isSnapped = snapEnabled && isActive && guides.length > 0;
 
     return (
       <div
@@ -430,13 +521,6 @@ export function BoardPreviewEditor({
         onPointerDown={(e) => startDrag(kind, 'move', e)}
       >
         <span className="board-block-label">{label}</span>
-        {isActive && (
-          <BlockMetrics
-            region={region}
-            canvasWidth={canvasDims.width}
-            canvasHeight={canvasDims.height}
-          />
-        )}
         {content}
         {HANDLES.map((handle) => (
           <div
@@ -451,96 +535,152 @@ export function BoardPreviewEditor({
 
   const isCarousel = settings.historyDisplayMode === 'carousel';
 
+  const zoomIn = () => {
+    setZoom((current) => Math.min(ZOOM_MAX, Number((current + ZOOM_STEP).toFixed(2))));
+  };
+
+  const zoomOut = () => {
+    setZoom((current) => Math.max(ZOOM_MIN, Number((current - ZOOM_STEP).toFixed(2))));
+  };
+
+  const resetZoom = () => {
+    setZoom(1);
+  };
+
   return (
     <div className="board-preview-editor">
-      <div
-        ref={canvasRef}
-        className={`board-canvas ${isPortrait ? 'board-canvas--portrait' : 'board-canvas--landscape'}`}
-        onPointerDown={() => setSelected(null)}
-      >
-        {images.backgroundPreviewUrl ? (
-          <img
-            className="board-bg"
-            src={images.backgroundPreviewUrl}
-            alt="底圖"
+      <div className="board-preview-toolbar">
+        <Space size="small">
+          <Button
+            size="small"
+            icon={<ZoomInOutlined />}
+            onClick={zoomIn}
+            disabled={zoom >= ZOOM_MAX}
+            aria-label="放大預覽"
           />
-        ) : (
-          <div className="board-bg board-bg--fallback" />
-        )}
-
-        <div className="board-safe-frame" style={regionStyle(zones.safeFrame)} />
-
-        {renderBlock(
-          'menu',
-          liveMenu,
-          images.menuPreviewUrl ? (
-            <img src={images.menuPreviewUrl} alt="菜單" className="board-zone-img" />
-          ) : (
-            <span className="board-zone-placeholder">
-              {isPortrait ? '菜單區' : '廣告區'}
-            </span>
-          ),
-          isPortrait ? '菜單區' : '廣告區',
-        )}
-
-        {renderBlock(
-          'logo',
-          liveLogo,
-          images.logoPreviewUrl ? (
-            <img src={images.logoPreviewUrl} alt="Logo" className="board-zone-img" />
-          ) : (
-            <span className="board-zone-placeholder board-logo-fallback">{displayName}</span>
-          ),
-          'Logo',
-        )}
-
-        {renderBlock(
-          'main',
-          liveMain,
-          <Typography.Title
-            level={1}
-            className="board-main-number"
-            style={{ fontSize: settings.mainNumberSize }}
-          >
-            A128
-          </Typography.Title>,
-          BLOCK_LABELS.main,
-        )}
-
-        {renderBlock(
-          'history',
-          liveHistory,
-          <div className="board-history-content">
-            {isCarousel && (
-              <SyncOutlined spin className="board-history-carousel-icon" />
-            )}
-            <div className="board-history-chips">
-              {Array.from({ length: settings.historyMax }).map((_, i) => (
-                <span
-                  key={i}
-                  className="board-history-chip"
-                  style={{ opacity: isCarousel && i > 0 ? 0.5 : 1 }}
-                >
-                  A{120 + i}
-                </span>
-              ))}
-            </div>
-          </div>,
-          BLOCK_LABELS.history,
-        )}
-
-        {guides.map((guide, i) => (
-          <div
-            key={`${guide.orientation}-${guide.positionPx}-${i}`}
-            className={`board-guide board-guide--${guide.orientation}`}
-            style={
-              guide.orientation === 'vertical'
-                ? { left: guide.positionPx }
-                : { top: guide.positionPx }
-            }
+          <Button
+            size="small"
+            icon={<ZoomOutOutlined />}
+            onClick={zoomOut}
+            disabled={zoom <= ZOOM_MIN}
+            aria-label="縮小預覽"
           />
-        ))}
+          <Button size="small" onClick={resetZoom} disabled={zoom === 1}>
+            重置
+          </Button>
+          <Typography.Text type="secondary" className="board-preview-zoom-label">
+            {Math.round(zoom * 100)}%
+          </Typography.Text>
+        </Space>
+        <Switch
+          size="small"
+          checked={snapEnabled}
+          onChange={setSnapEnabled}
+          checkedChildren="吸附"
+          unCheckedChildren="吸附"
+        />
       </div>
+
+      <div className="board-preview-viewport">
+          <div
+            ref={canvasRef}
+            className={`board-canvas ${isPortrait ? 'board-canvas--portrait' : 'board-canvas--landscape'}`}
+            style={{ '--board-zoom': zoom } as CSSProperties}
+            onPointerDown={() => setSelected(null)}
+          >
+            {images.backgroundPreviewUrl ? (
+              <img
+                className="board-bg"
+                src={images.backgroundPreviewUrl}
+                alt="底圖"
+              />
+            ) : (
+              <div className="board-bg board-bg--fallback" />
+            )}
+
+            {renderBlock(
+              'menu',
+              liveMenu,
+              images.menuPreviewUrl ? (
+                <img src={images.menuPreviewUrl} alt="菜單" className="board-zone-img" />
+              ) : (
+                <span className="board-zone-placeholder">
+                  {isPortrait ? '菜單區' : '廣告區'}
+                </span>
+              ),
+              isPortrait ? '菜單區' : '廣告區',
+            )}
+
+            {renderBlock(
+              'logo',
+              liveLogo,
+              images.logoPreviewUrl ? (
+                <img src={images.logoPreviewUrl} alt="Logo" className="board-zone-img" />
+              ) : (
+                <span className="board-zone-placeholder board-logo-fallback">{displayName}</span>
+              ),
+              'Logo',
+            )}
+
+            {renderBlock(
+              'main',
+              liveMain,
+              <Typography.Title
+                level={1}
+                className="board-main-number"
+                style={{ fontSize: settings.mainNumberSize }}
+              >
+                A128
+              </Typography.Title>,
+              BLOCK_LABELS.main,
+            )}
+
+            {renderBlock(
+              'history',
+              liveHistory,
+              <div className="board-history-content">
+                {isCarousel && (
+                  <SyncOutlined spin className="board-history-carousel-icon" />
+                )}
+                <div className="board-history-chips">
+                  {Array.from({ length: settings.historyMax }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="board-history-chip"
+                      style={{ opacity: isCarousel && i > 0 ? 0.5 : 1 }}
+                    >
+                      A{120 + i}
+                    </span>
+                  ))}
+                </div>
+              </div>,
+              BLOCK_LABELS.history,
+            )}
+
+            {snapEnabled && guides.map((guide, i) => (
+              <div
+                key={`${guide.orientation}-${guide.positionPx}-${i}`}
+                className={`board-guide board-guide--${guide.orientation}`}
+                style={
+                  guide.orientation === 'vertical'
+                    ? { left: guide.positionPx }
+                    : { top: guide.positionPx }
+                }
+              />
+            ))}
+          </div>
+      </div>
+
+      {selected && selectedRegion && (
+        <BlockRegionInputs
+          kind={selected}
+          region={selectedRegion}
+          canvasWidth={canvasDims.width}
+          canvasHeight={canvasDims.height}
+          onChange={(metrics) => applyPixelMetrics(selected, metrics)}
+        />
+      )}
+
       <div className="board-preview-caption">
         {displayName} · {isPortrait ? '直式 1080×1920' : '橫式 1920×1080'} · 拖曳四區塊調整
       </div>
