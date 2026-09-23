@@ -1,11 +1,15 @@
 import {
-  SyncOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
 import { Button, InputNumber, Space, Switch, Typography } from 'antd';
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { BlockRegion, BrandDisplaySettings, BrandImages, BrandLayout } from '../types/brand';
+import {
+  clampHistoryPage,
+  computeHistoryPagination,
+  sliceHistoryPage,
+} from '../utils/history-pagination';
 import {
   clampRegion,
   pixelMetricsToRegion,
@@ -26,6 +30,133 @@ type ResizeHandle =
   | 'nw'
   | 'se'
   | 'sw';
+
+const PREVIEW_HISTORY_ITEMS = Array.from({ length: 14 }, (_, index) => `A${127 - index}`);
+
+interface BoardHistoryPreviewProps {
+  intervalSec: number;
+}
+
+function BoardHistoryPreview({ intervalSec }: BoardHistoryPreviewProps) {
+  const stackRef = useRef<HTMLDivElement>(null);
+  const pagerRef = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(1);
+  const [layout, setLayout] = useState({
+    pageSize: 3,
+    pageCount: 1,
+    showPager: false,
+  });
+
+  const recomputeLayout = useCallback(() => {
+    const stack = stackRef.current;
+    const items = itemsRef.current;
+    const pager = pagerRef.current;
+    if (!stack || !items) {
+      return;
+    }
+
+    const blockHeight = stack.clientHeight;
+    const probe = document.createElement('span');
+    probe.className = 'board-history-chip';
+    probe.textContent = 'A000';
+    probe.setAttribute('aria-hidden', 'true');
+    probe.style.visibility = 'hidden';
+    probe.style.position = 'absolute';
+    items.appendChild(probe);
+    const styles = window.getComputedStyle(items);
+    const gap = Number.parseFloat(styles.gap || styles.rowGap || '0') || 0;
+    const rowHeight = probe.getBoundingClientRect().height + gap;
+    items.removeChild(probe);
+
+    let pagerHeight = 0;
+    if (pager) {
+      const wasHidden = pager.hidden;
+      pager.hidden = false;
+      pagerHeight = pager.getBoundingClientRect().height;
+      pager.hidden = wasHidden;
+    }
+
+    const nextLayout = computeHistoryPagination(
+      PREVIEW_HISTORY_ITEMS.length,
+      blockHeight,
+      rowHeight,
+      pagerHeight,
+    );
+    setLayout(nextLayout);
+    setPage((prev) => clampHistoryPage(prev, nextLayout.pageCount));
+  }, []);
+
+  useEffect(() => {
+    recomputeLayout();
+    const stack = stackRef.current;
+    if (!stack || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      recomputeLayout();
+    });
+    observer.observe(stack);
+    return () => {
+      observer.disconnect();
+    };
+  }, [recomputeLayout]);
+
+  const pageItems = useMemo(
+    () => sliceHistoryPage(PREVIEW_HISTORY_ITEMS, page, layout.pageSize),
+    [layout.pageSize, page],
+  );
+
+  const goPage = (next: number) => {
+    setPage(clampHistoryPage(next, layout.pageCount));
+  };
+
+  return (
+    <div className="board-history-content">
+      <div className="board-history-stack" ref={stackRef}>
+        <div className="board-history-items" ref={itemsRef}>
+          {pageItems.map((code) => (
+            <span key={code} className="board-history-chip">
+              {code}
+            </span>
+          ))}
+        </div>
+        <div
+          className="board-history-pager"
+          ref={pagerRef}
+          hidden={!layout.showPager}
+        >
+          <button
+            type="button"
+            className="board-history-pager-btn"
+            disabled={page <= 1}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => goPage(page - 1)}
+          >
+            上一頁
+          </button>
+          <span className="board-history-pager-status">
+            {page}／{layout.pageCount}
+          </span>
+          <button
+            type="button"
+            className="board-history-pager-btn"
+            disabled={page >= layout.pageCount}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => goPage(page + 1)}
+          >
+            下一頁
+          </button>
+        </div>
+      </div>
+      {layout.showPager && (
+        <div className="board-history-store-note">
+          門市將每 {intervalSec} 秒自動翻
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface BoardPreviewEditorProps {
   displayName: string;
@@ -541,8 +672,6 @@ export function BoardPreviewEditor({
     );
   };
 
-  const isCarousel = settings.historyDisplayMode === 'carousel';
-
   const zoomIn = () => {
     setZoom((current) => Math.min(ZOOM_MAX, Number((current + ZOOM_STEP).toFixed(2))));
   };
@@ -656,22 +785,7 @@ export function BoardPreviewEditor({
             {renderBlock(
               'history',
               liveHistory,
-              <div className="board-history-content">
-                {isCarousel && (
-                  <SyncOutlined spin className="board-history-carousel-icon" />
-                )}
-                <div className="board-history-chips">
-                  {Array.from({ length: settings.historyMax }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="board-history-chip"
-                      style={{ opacity: isCarousel && i > 0 ? 0.5 : 1 }}
-                    >
-                      A{120 + i}
-                    </span>
-                  ))}
-                </div>
-              </div>,
+              <BoardHistoryPreview intervalSec={settings.historyPageIntervalSec} />,
               BLOCK_LABELS.history,
             )}
 

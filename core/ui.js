@@ -115,7 +115,16 @@
         '<div class="qms-main-number" id="qms-main-number"></div>' +
         '<div class="qms-pickup-hint" id="qms-pickup-hint">' + hint + '</div>' +
         '</div>' +
-        '<div class="qms-history" id="qms-history"></div>';
+        '<div class="qms-history" id="qms-history">' +
+        '<div class="qms-history-stack" id="qms-history-stack">' +
+        '<div class="qms-history-items" id="qms-history-items"></div>' +
+        '<div class="qms-history-pager" id="qms-history-pager" hidden>' +
+        '<button type="button" class="qms-history-pager-btn" id="qms-history-prev">上一頁</button>' +
+        '<span class="qms-history-pager-status" id="qms-history-pager-status"></span>' +
+        '<button type="button" class="qms-history-pager-btn" id="qms-history-next">下一頁</button>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
 
       let inner = '';
       switch (layout) {
@@ -287,15 +296,10 @@
         hint.hidden = standby;
       }
 
-      if (historyEl) {
-        const max = brand.queue.historyMax;
-        const items = snapshot.history.slice(0, max);
-        historyEl.innerHTML = items
-          .map(function (num) {
-            return '<span class="qms-history-item">' + num + '</span>';
-          })
-          .join('');
-      }
+      renderHistoryList(snapshot, {
+        resetPage: Boolean(flags && flags.resetHistoryPage),
+        restartCarousel: true,
+      });
 
       if (storeIdEl) {
         storeIdEl.textContent = snapshot.storeId || '—';
@@ -344,7 +348,201 @@
       root.addEventListener('resize', scaleCanvas);
     }
 
+    const historyPageState = { page: 1 };
+    let carouselTimer = null;
+    let lastHistoryItems = [];
+    let lastSnapshot = { history: [], prefs: {} };
+    let historyLayoutObserver = null;
+    let historyStackEl = null;
+    let historyItemsEl = null;
+    let historyPagerEl = null;
+    let historyPagerStatusEl = null;
+    let historyPrevBtn = null;
+    let historyNextBtn = null;
+
+    function historyIntervalMs() {
+      return QMS.resolveHistoryPageIntervalSec(brand.queue) * 1000;
+    }
+
+    function clearCarouselTimer() {
+      if (carouselTimer != null) {
+        root.clearTimeout(carouselTimer);
+        carouselTimer = null;
+      }
+    }
+
+    function measureHistoryRowHeight(vertical) {
+      if (!historyItemsEl) {
+        return vertical ? 72 : 64;
+      }
+      const probe = doc.createElement('span');
+      probe.className = 'qms-history-item';
+      probe.textContent = '000';
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.visibility = 'hidden';
+      probe.style.position = 'absolute';
+      probe.style.pointerEvents = 'none';
+      historyItemsEl.appendChild(probe);
+      const styles = root.getComputedStyle(historyItemsEl);
+      const gap = Number.parseFloat(styles.gap || styles.rowGap || '0') || 0;
+      const height = probe.getBoundingClientRect().height;
+      historyItemsEl.removeChild(probe);
+      if (!height) {
+        return vertical ? 72 : 64;
+      }
+      return height + gap;
+    }
+
+    function measurePagerRowHeight() {
+      if (!historyPagerEl) {
+        return 0;
+      }
+      const wasHidden = historyPagerEl.hidden;
+      historyPagerEl.hidden = false;
+      const height = historyPagerEl.getBoundingClientRect().height;
+      historyPagerEl.hidden = wasHidden;
+      return height || 0;
+    }
+
+    function computeHistoryLayout(total) {
+      const stack = historyStackEl;
+      if (!stack) {
+        return { pageSize: QMS.MIN_HISTORY_PAGE_SIZE, pageCount: 1, showPager: false };
+      }
+      const blockHeight = stack.getBoundingClientRect().height;
+      const vertical = stack.classList.contains('is-vertical');
+      const rowHeight = measureHistoryRowHeight(vertical);
+      const pagerRowHeight = measurePagerRowHeight();
+      return QMS.computeHistoryPagination(total, blockHeight, rowHeight, pagerRowHeight);
+    }
+
+    function syncHistoryPageBounds(pageCount) {
+      historyPageState.page = QMS.clampHistoryPage(historyPageState.page, pageCount);
+    }
+
+    function updatePagerChrome(page, pageCount, showPager) {
+      if (!historyPagerEl || !historyPagerStatusEl) {
+        return;
+      }
+      historyPagerEl.hidden = !showPager;
+      if (!showPager) {
+        return;
+      }
+      historyPagerStatusEl.textContent = String(page) + '／' + String(pageCount);
+      if (historyPrevBtn) {
+        historyPrevBtn.disabled = page <= 1;
+      }
+      if (historyNextBtn) {
+        historyNextBtn.disabled = page >= pageCount;
+      }
+    }
+
+    function paintHistoryItems(items, vertical) {
+      if (!historyItemsEl) {
+        return;
+      }
+      historyItemsEl.classList.toggle('is-vertical', vertical);
+      historyItemsEl.innerHTML = items
+        .map(function (num) {
+          return '<span class="qms-history-item">' + num + '</span>';
+        })
+        .join('');
+    }
+
+    function renderHistoryList(snapshot, options) {
+      const opts = options || {};
+      lastSnapshot = snapshot;
+      if (opts.resetPage) {
+        historyPageState.page = 1;
+      }
+
+      const vertical = historyOrientation(snapshot) === 'vertical';
+      if (historyStackEl) {
+        historyStackEl.classList.toggle('is-vertical', vertical);
+      }
+
+      lastHistoryItems = snapshot.history.slice();
+      const total = lastHistoryItems.length;
+      let layout = computeHistoryLayout(total);
+      syncHistoryPageBounds(layout.pageCount);
+      layout = computeHistoryLayout(total);
+
+      const pageItems = QMS.sliceHistoryPage(
+        lastHistoryItems,
+        historyPageState.page,
+        layout.pageSize
+      );
+      paintHistoryItems(pageItems, vertical);
+      updatePagerChrome(historyPageState.page, layout.pageCount, layout.showPager);
+
+      if (opts.restartCarousel !== false) {
+        scheduleCarousel(layout.pageCount);
+      }
+    }
+
+    function goHistoryPage(nextPage) {
+      const layout = computeHistoryLayout(lastHistoryItems.length);
+      historyPageState.page = QMS.clampHistoryPage(nextPage, layout.pageCount);
+      renderHistoryList(lastSnapshot, { restartCarousel: true });
+    }
+
+    function scheduleCarousel(pageCount) {
+      clearCarouselTimer();
+      if (pageCount <= 1) {
+        return;
+      }
+      if (doc.visibilityState === 'hidden') {
+        return;
+      }
+      carouselTimer = root.setTimeout(function () {
+        const layout = computeHistoryLayout(lastHistoryItems.length);
+        const next =
+          historyPageState.page >= layout.pageCount ? 1 : historyPageState.page + 1;
+        historyPageState.page = next;
+        renderHistoryList(lastSnapshot, { restartCarousel: true });
+      }, historyIntervalMs());
+    }
+
+    function bindHistoryPager() {
+      if (historyPrevBtn) {
+        historyPrevBtn.addEventListener('click', function (event) {
+          event.stopPropagation();
+          goHistoryPage(historyPageState.page - 1);
+        });
+      }
+      if (historyNextBtn) {
+        historyNextBtn.addEventListener('click', function (event) {
+          event.stopPropagation();
+          goHistoryPage(historyPageState.page + 1);
+        });
+      }
+      if (typeof doc.addEventListener === 'function') {
+        doc.addEventListener('visibilitychange', function () {
+          if (doc.visibilityState === 'hidden') {
+            clearCarouselTimer();
+            return;
+          }
+          scheduleCarousel(computeHistoryLayout(lastHistoryItems.length).pageCount);
+        });
+      }
+      if (historyStackEl && typeof root.ResizeObserver === 'function') {
+        historyLayoutObserver = new root.ResizeObserver(function () {
+          renderHistoryList(lastSnapshot, { restartCarousel: false });
+          scheduleCarousel(computeHistoryLayout(lastHistoryItems.length).pageCount);
+        });
+        historyLayoutObserver.observe(historyStackEl);
+      }
+    }
+
     renderShell();
+
+    historyStackEl = doc.getElementById('qms-history-stack');
+    historyItemsEl = doc.getElementById('qms-history-items');
+    historyPagerEl = doc.getElementById('qms-history-pager');
+    historyPagerStatusEl = doc.getElementById('qms-history-pager-status');
+    historyPrevBtn = doc.getElementById('qms-history-prev');
+    historyNextBtn = doc.getElementById('qms-history-next');
+    bindHistoryPager();
 
     return {
       layout: layout,

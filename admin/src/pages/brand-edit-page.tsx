@@ -54,7 +54,7 @@ interface BasicFormValues {
 
 interface DisplayFormValues {
   layout: BrandLayout;
-  historyMax: number;
+  historyPageIntervalSec: number;
   mainNumberSize: number;
 }
 
@@ -114,7 +114,7 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
     });
     displayForm.setFieldsValue({
       layout: initialBrand.displaySettings.layout,
-      historyMax: initialBrand.displaySettings.historyMax,
+      historyPageIntervalSec: initialBrand.displaySettings.historyPageIntervalSec,
       mainNumberSize: initialBrand.displaySettings.mainNumberSize,
     });
   }, [basicForm, displayForm, initialBrand]);
@@ -140,7 +140,7 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
     const nextSettings: BrandDisplaySettings = {
       ...previewSettings,
       layout: display.layout,
-      historyMax: display.historyMax,
+      historyPageIntervalSec: display.historyPageIntervalSec,
       mainNumberSize: display.mainNumberSize,
       ...(layoutChanged
         ? {
@@ -374,11 +374,11 @@ function BrandEditPageContent({ brandId, initialBrand }: BrandEditPageContentPro
                     </Radio.Group>
                   </Form.Item>
                   <Form.Item
-                    label="歷史叫號筆數"
-                    name="historyMax"
-                    rules={[{ type: 'number', min: 1, max: 5 }]}
+                    label="歷史翻頁間隔（秒）"
+                    name="historyPageIntervalSec"
+                    rules={[{ type: 'number', min: 3, max: 30 }]}
                   >
-                    <InputNumber min={1} max={5} style={{ width: 120 }} />
+                    <InputNumber min={3} max={30} step={1} style={{ width: 120 }} />
                   </Form.Item>
                   <Form.Item label="主叫號字級" name="mainNumberSize">
                     <Slider min={48} max={96} marks={{ 48: '小', 72: '中', 96: '大' }} />

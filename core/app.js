@@ -76,7 +76,10 @@
         });
 
         store.subscribe(function (kind, snapshot) {
-          ui.render(snapshot, { animate: kind === 'call' || kind === 'repeat' });
+          ui.render(snapshot, {
+            animate: kind === 'call' || kind === 'repeat',
+            resetHistoryPage: kind === 'call' || kind === 'repeat',
+          });
           if (kind === 'call' || kind === 'repeat') {
             audio.announce(snapshot.current, brand.copy.pickupHint);
           }
@@ -87,7 +90,7 @@
           if (!code) {
             return;
           }
-          store.applyCall(code, brand.queue.historyMax);
+          store.applyCall(code);
         }
 
         const scanner = QMS.createScanner({ onScan: applyScan });

@@ -156,9 +156,17 @@
     const bannerOpacityRaw = Number(theme.bannerOpacity);
     const bannerOpacity = Number.isFinite(bannerOpacityRaw) ? bannerOpacityRaw : 0.85;
 
-    const historyMaxRaw = Number(queue.historyMax);
     const historyOrientation =
       queue.historyOrientation === 'vertical' ? 'vertical' : 'horizontal';
+    const intervalRaw = Number(
+      queue.historyPageIntervalSec != null
+        ? queue.historyPageIntervalSec
+        : queue.historyCarouselIntervalSec,
+    );
+    const historyPageIntervalSec =
+      Number.isFinite(intervalRaw) && intervalRaw > 0
+        ? Math.max(3, Math.min(30, Math.round(intervalRaw)))
+        : 6;
 
     return {
       version: Number(brand.version) || 1,
@@ -176,8 +184,8 @@
         standbyFallback: 'logo-on-primary',
       },
       queue: {
-        historyMax: Number.isFinite(historyMaxRaw) && historyMaxRaw > 0 ? historyMaxRaw : 3,
         historyOrientation: historyOrientation,
+        historyPageIntervalSec: historyPageIntervalSec,
         mainNumberMaxLenForLargeFont:
           Number(queue.mainNumberMaxLenForLargeFont) > 0
             ? Number(queue.mainNumberMaxLenForLargeFont)
