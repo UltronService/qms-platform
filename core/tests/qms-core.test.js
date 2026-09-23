@@ -27,6 +27,7 @@ function loadCore() {
   const files = [
     'brand-loader.js',
     'state.js',
+    'history-pagination.js',
     'scanner.js',
     'audio.js',
     'settings.js',
@@ -73,8 +74,8 @@ const sampleBrand = {
     standbyFallback: 'logo-on-primary',
   },
   queue: {
-    historyMax: 3,
     historyOrientation: 'horizontal',
+    historyPageIntervalSec: 6,
     mainNumberMaxLenForLargeFont: 4,
   },
   audio: {
@@ -143,7 +144,7 @@ test('validate + normalize guiji brand.json fixture', function () {
   const validated = QMS.validateBrand(sampleBrand, 'guiji');
   const normalized = QMS.normalizeBrand(validated, 'brands/guiji');
   assert.equal(normalized.layout, 'portrait-menu');
-  assert.equal(normalized.queue.historyMax, 3);
+  assert.equal(normalized.queue.historyPageIntervalSec, 6);
   assert.equal(normalized.copy.standbyFallback, 'logo-on-primary');
   assert.equal(normalized.assets.logo, 'brands/guiji/assets/logo.svg');
   assert.equal(normalized.theme.bannerOpacityMin, 0.75);
@@ -164,19 +165,32 @@ test('barcode normalize pads digits and keeps prefixes', function () {
   assert.equal(QMS.normalizeBarcode(''), '');
 });
 
-test('applyCall keeps 1 current + historyMax and repeats in place', function () {
+test('applyCall keeps unlimited history and repeats in place', function () {
   const QMS = loadCore();
   const empty = QMS.createEmptyState();
-  const first = QMS.applyCallToSnapshot(empty, '001', 3);
+  const first = QMS.applyCallToSnapshot(empty, '001');
   assert.equal(first.kind, 'call');
   assert.equal(first.snapshot.current, '001');
-  const second = QMS.applyCallToSnapshot(first.snapshot, '002', 3);
-  const third = QMS.applyCallToSnapshot(second.snapshot, '003', 3);
-  const fourth = QMS.applyCallToSnapshot(third.snapshot, '004', 3);
+  const second = QMS.applyCallToSnapshot(first.snapshot, '002');
+  const third = QMS.applyCallToSnapshot(second.snapshot, '003');
+  const fourth = QMS.applyCallToSnapshot(third.snapshot, '004');
   assert.equal(fourth.snapshot.history.join(','), '003,002,001');
-  const repeat = QMS.applyCallToSnapshot(fourth.snapshot, '004', 3);
+  const fifth = QMS.applyCallToSnapshot(fourth.snapshot, '005');
+  assert.equal(fifth.snapshot.history.length, 4);
+  const repeat = QMS.applyCallToSnapshot(fifth.snapshot, '005');
   assert.equal(repeat.kind, 'repeat');
-  assert.equal(repeat.snapshot.current, '004');
+  assert.equal(repeat.snapshot.current, '005');
+});
+
+test('history pagination math matches page window rules', function () {
+  const QMS = loadCore();
+  const layout = QMS.computeHistoryPagination(10, 200, 40, 24);
+  assert.equal(layout.pageSize, 4);
+  assert.equal(layout.pageCount, 3);
+  assert.equal(layout.showPager, true);
+  assert.deepEqual(QMS.sliceHistoryPage(['a', 'b', 'c', 'd', 'e'], 2, 2), ['c', 'd']);
+  assert.equal(QMS.clampHistoryPage(9, 3), 3);
+  assert.equal(QMS.resolveHistoryPageIntervalSec({ historyCarouselIntervalSec: 12 }), 12);
 });
 
 test('migrates legacy guiji keys into qms_state_v1', function () {

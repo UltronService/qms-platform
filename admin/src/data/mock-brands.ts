@@ -16,9 +16,8 @@ export const mockBrands: BrandRecord[] = [
     updatedAt: '2026-09-18T14:30:00',
     displaySettings: {
       layout: 'portrait-menu',
-      historyMax: 2,
+      historyPageIntervalSec: 6,
       mainNumberSize: 72,
-      historyDisplayMode: 'static',
       logoBlockRegion: getDefaultLogoBlockRegion('portrait-menu'),
       mainBlockRegion: getDefaultMainBlockRegion('portrait-menu'),
       historyBlockRegion: getDefaultHistoryBlockRegion('portrait-menu'),
@@ -39,9 +38,8 @@ export const mockBrands: BrandRecord[] = [
     updatedAt: '2026-09-15T09:15:00',
     displaySettings: {
       layout: 'landscape-queue',
-      historyMax: 2,
+      historyPageIntervalSec: 8,
       mainNumberSize: 64,
-      historyDisplayMode: 'carousel',
       logoBlockRegion: getDefaultLogoBlockRegion('landscape-queue'),
       mainBlockRegion: getDefaultMainBlockRegion('landscape-queue'),
       historyBlockRegion: getDefaultHistoryBlockRegion('landscape-queue'),
@@ -62,9 +60,8 @@ export const mockBrands: BrandRecord[] = [
     updatedAt: '2026-09-10T16:45:00',
     displaySettings: {
       layout: 'portrait-menu',
-      historyMax: 2,
+      historyPageIntervalSec: 6,
       mainNumberSize: 80,
-      historyDisplayMode: 'static',
       logoBlockRegion: getDefaultLogoBlockRegion('portrait-menu'),
       mainBlockRegion: getDefaultMainBlockRegion('portrait-menu'),
       historyBlockRegion: getDefaultHistoryBlockRegion('portrait-menu'),

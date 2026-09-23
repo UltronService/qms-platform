@@ -226,15 +226,13 @@
   /**
    * @param {QmsState} snapshot
    * @param {string} code
-   * @param {number} historyMax
    * @returns {{ snapshot: QmsState, kind: 'ignored' | 'repeat' | 'call' }}
    */
-  function applyCallToSnapshot(snapshot, code, historyMax) {
+  function applyCallToSnapshot(snapshot, code) {
     if (!code) {
       return { snapshot: snapshot, kind: 'ignored' };
     }
 
-    const max = historyMax > 0 ? historyMax : 3;
     if (snapshot.current === code) {
       return { snapshot: snapshot, kind: 'repeat' };
     }
@@ -253,7 +251,7 @@
     return {
       snapshot: Object.assign({}, snapshot, {
         current: code,
-        history: history.slice(0, max),
+        history: history,
         updatedAt: Date.now(),
       }),
       kind: 'call',
@@ -340,8 +338,8 @@
           }
         };
       },
-      applyCall: function (code, historyMax) {
-        const result = applyCallToSnapshot(state, code, historyMax);
+      applyCall: function (code) {
+        const result = applyCallToSnapshot(state, code);
         if (result.kind === 'ignored') {
           return result;
         }

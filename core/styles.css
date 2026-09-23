@@ -227,17 +227,69 @@ body {
 .qms-history {
   position: absolute;
   right: 36px;
+  left: 36px;
+  top: 58%;
   bottom: 28px;
   display: flex;
-  flex-direction: row;
-  gap: 20px;
+  flex-direction: column;
   z-index: 4;
 }
 
-.qms-history.is-vertical {
+.qms-history-stack {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  justify-content: flex-end;
+}
+
+.qms-history-items {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 20px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.qms-history-stack.is-vertical .qms-history-items,
+.qms-history-items.is-vertical {
   flex-direction: column-reverse;
   align-items: flex-end;
-  bottom: 36px;
+}
+
+.qms-history-pager {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  margin-top: 8px;
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.qms-history-pager-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.qms-history-pager-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.qms-history.is-vertical {
+  align-items: flex-end;
 }
 
 .qms-history-item {
@@ -250,11 +302,12 @@ body {
 }
 
 .layout-landscape-queue .qms-history {
-  right: auto;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 5%;
+  left: 5%;
+  top: 52%;
   bottom: 48px;
-  width: 90%;
+  transform: none;
+  width: auto;
   justify-content: center;
 }
 

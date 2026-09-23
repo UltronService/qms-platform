@@ -2,8 +2,6 @@ export type BrandLayout = 'portrait-menu' | 'landscape-queue';
 
 export type BrandStatus = 'draft' | 'published';
 
-export type HistoryDisplayMode = 'static' | 'carousel';
-
 /** Percentage-based region on the call-board canvas (0–100). */
 export interface BlockRegion {
   x: number;
@@ -14,9 +12,8 @@ export interface BlockRegion {
 
 export interface BrandDisplaySettings {
   layout: BrandLayout;
-  historyMax: number;
+  historyPageIntervalSec: number;
   mainNumberSize: number;
-  historyDisplayMode: HistoryDisplayMode;
   logoBlockRegion: BlockRegion;
   mainBlockRegion: BlockRegion;
   historyBlockRegion: BlockRegion;

@@ -92,9 +92,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       updatedAt: new Date().toISOString().slice(0, 10),
       displaySettings: {
         layout,
-        historyMax: 2,
+        historyPageIntervalSec: 6,
         mainNumberSize: 72,
-        historyDisplayMode: 'static',
         logoBlockRegion: getDefaultLogoBlockRegion(layout),
         mainBlockRegion: getDefaultMainBlockRegion(layout),
         historyBlockRegion: getDefaultHistoryBlockRegion(layout),
