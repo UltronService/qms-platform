@@ -18,7 +18,7 @@
     'audio',
     'assets',
   ];
-  const KNOWN_LAYOUTS = ['portrait-menu', 'landscape-queue'];
+  const KNOWN_LAYOUTS = ['portrait-menu', 'landscape-queue', 'milksha-callboard'];
   const STANDBY_FALLBACKS = ['logo-on-primary'];
 
   /**

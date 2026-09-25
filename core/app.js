@@ -50,6 +50,14 @@
 
     QMS.loadBrandPack(brandId)
       .then(function (brand) {
+        if (brand.layout === 'milksha-callboard' && typeof QMS.bootMilkshaBoard === 'function') {
+          const runtime = QMS.bootMilkshaBoard(brand);
+          if (queryFlag('demo') && typeof QMS.attachMilkshaDemo === 'function') {
+            QMS.attachMilkshaDemo(runtime);
+          }
+          return;
+        }
+
         const store = QMS.createStateStore();
         store.seedReservedIds({
           storeId: brand.storeId,

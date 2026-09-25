@@ -247,6 +247,7 @@
             markTtsFailed();
           });
       },
+      playDingDong: playDingDong,
     };
   }
 
